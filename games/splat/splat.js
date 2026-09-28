@@ -119,16 +119,24 @@ function createRunnerStrategy() {
         .sort((a, b) => a.x - b.x);
       const target = candidates[0];
       if (target) {
-        const jitter = (1 - difficulty) * 30 * (Math.random() * 2 - 1);
+        const jitter = (1 - difficulty) * 25 * (Math.random() * 2 - 1);
         decisionTargetY = target.gapY + jitter;
       } else {
         decisionTargetY = FIELD.height / 2;
       }
     }
 
-    const margin = 10 + (1 - difficulty) * 10;
-    const lookahead = state.runner.y + state.runner.vy * 0.05;
-    return { flap: lookahead > decisionTargetY - margin };
+    // One-tick-ahead: flap now if letting gravity act for one more physics
+    // step would sink us below the target line. This hovers tightly around
+    // decisionTargetY with no structural bias -- difficulty affects how
+    // often a needed flap gets skipped (mistakeChance), not where the
+    // controller aims.
+    const FIXED_DT = 1 / 60;
+    const projected = state.runner.y + state.runner.vy * FIXED_DT + 0.5 * GRAVITY * FIXED_DT * FIXED_DT;
+    let shouldFlap = projected > decisionTargetY;
+    const mistakeChance = (1 - difficulty) * 0.12;
+    if (shouldFlap && Math.random() < mistakeChance) shouldFlap = false;
+    return { flap: shouldFlap };
   };
 }
 

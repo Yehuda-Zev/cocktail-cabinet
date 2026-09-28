@@ -5,6 +5,44 @@ and how we verified it. Kept as we go, not written after the fact.
 
 ---
 
+### 2026-09-28 — Two bugs from actual playtesting
+
+**Asked:** "The AI in Splat is really bad" and "the missiles in Missile
+Command are way too small, you can barely ever hit them" — both reported
+directly from playing the deployed games, not from reading code.
+
+**Found and fixed:**
+- **Splat's runner AI had a real aim bias**, not just weak tuning. The old
+  flap controller compared its lookahead against `decisionTargetY - margin`
+  (margin 10–20px) *and* the physics of a flap-triggered rise naturally
+  overshoots ~50px above the trigger point — combined, the runner's hover
+  equilibrium sat 60–70px above the true gap center at every difficulty
+  level. With gaps shrinking to 110px tall (half = 55px) at high
+  difficulty, that bias alone was enough to clip the top wall on gaps the
+  runner was correctly "aiming" at. Rewrote it as a proper one-tick-ahead
+  controller (`games/splat/splat.js`): flap now if unpowered gravity for
+  one more physics step would sink below the target line, checked every
+  tick (not just every `recomputeEvery` ticks — that latency now only
+  gates *which column* it's tracking, not the flap decision itself).
+  Difficulty now affects a `mistakeChance` of skipping a needed flap and
+  aim jitter on target selection, not where the controller aims.
+- **Missile Command's missiles were rendered as a 2–6px, 2px-wide line**
+  (`m.x - m.vx * 0.03`, trail length scaled by a tiny 0.03s) — visually
+  almost nothing against a 640×480 field, making it genuinely hard for a
+  human to track and lead. Not a hit-detection bug (collision is explosion
+  radius vs. missile point, unaffected by render size) but a real
+  usability bug. Fixed by drawing a 5px filled head plus a 0.15s trail at
+  3px width (`games/missile-command/missile-command.js`).
+
+**Verified:** Local server, live browser, both fixes. Splat: ran a full
+computer-vs-computer match after the fix, watched the runner hover
+tightly around the gap center (not biased high) across multiple columns
+and clear at least one column cleanly with no collision. Missile Command:
+confirmed the missile now renders as a clearly visible dot-with-trail
+instead of a near-invisible sliver.
+
+---
+
 ### 2026-09-28 — Missile Command
 
 **Asked:** Design and build Missile Command's flip (the assignment left it

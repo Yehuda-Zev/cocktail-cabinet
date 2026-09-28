@@ -302,14 +302,18 @@ function draw(ctx) {
     ctx.fillRect(c.x - CITY_WIDTH / 2, GROUND_Y - 16, CITY_WIDTH, 16);
   });
 
-  ctx.fillStyle = '#ffe94a';
   state.missiles.forEach((m) => {
     ctx.beginPath();
     ctx.moveTo(m.x, m.y);
-    ctx.lineTo(m.x - m.vx * 0.03, m.y - m.vy * 0.03);
-    ctx.strokeStyle = '#ffe94a';
-    ctx.lineWidth = 2;
+    ctx.lineTo(m.x - m.vx * 0.15, m.y - m.vy * 0.15);
+    ctx.strokeStyle = 'rgba(255, 233, 74, 0.7)';
+    ctx.lineWidth = 3;
     ctx.stroke();
+
+    ctx.fillStyle = '#ffe94a';
+    ctx.beginPath();
+    ctx.arc(m.x, m.y, 5, 0, Math.PI * 2);
+    ctx.fill();
   });
 
   ctx.strokeStyle = '#f2f2f8';
