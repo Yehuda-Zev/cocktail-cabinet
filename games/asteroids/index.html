@@ -7,17 +7,37 @@
 <link rel="stylesheet" href="../../shared/css/game.css" />
 </head>
 <body class="game-page">
+
   <div class="game-header">
     <a class="back-link" href="../../">&larr; Cabinet</a>
     <h1>Asteroids</h1>
     <span style="width:4.5rem"></span>
   </div>
-  <div class="coming-soon">
-    <p><strong>Roles:</strong> Pilot (Player A) vs Asteroid Sender (Player B — "computer flies the ship, human sends the asteroids").</p>
-    <p>Planned: mirrors Snake's steerer/placer split. Computer pilot uses a steering strategy (avoid nearest threats,
-    thrust toward open space) scaled by difficulty; computer sender picks spawn angle/speed/size scaled by difficulty,
-    always respecting a minimum "fair spawn" distance from the ship so it's never an instant unavoidable hit.</p>
-    <p>See <a href="../../ARCHITECTURE.md">ARCHITECTURE.md</a> for the full flip design.</p>
+
+  <div id="role-assignment"></div>
+
+  <div class="game-hud">
+    <span>Dodged: <strong id="hud-score">0</strong></span>
+    <span>Asteroid Speed: <strong id="hud-speed">–</strong></span>
+    <span>Status: <strong id="hud-status">Ready</strong></span>
   </div>
+
+  <div class="game-canvas-frame">
+    <canvas id="game-canvas"></canvas>
+  </div>
+
+  <div class="game-controls">
+    <button class="game-btn" id="btn-start">Start</button>
+    <button class="game-btn" id="btn-restart">Restart</button>
+  </div>
+
+  <p class="game-note">
+    Pilot: Arrow Left/Right to rotate, Arrow Up to thrust, ship wraps at the edges. Sender: click
+    anywhere to throw an asteroid that flies toward that point from a random edge. A shared
+    cooldown limits how fast asteroids can be thrown — it shortens over time for both human and
+    computer senders alike.
+  </p>
+
+  <script type="module" src="asteroids.js"></script>
 </body>
 </html>

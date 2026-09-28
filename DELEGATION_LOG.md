@@ -5,6 +5,46 @@ and how we verified it. Kept as we go, not written after the fact.
 
 ---
 
+### 2026-09-28 — Asteroids
+
+**Asked:** Build Asteroids, fourth real game, same Role/Agent pattern.
+
+**Produced:** `games/asteroids/asteroids.js` + updated
+`games/asteroids/index.html`. Classic rotate/thrust/wrap ship physics.
+Default is the classic setup (human pilots, computer throws) since the
+assignment's stated flip ("computer flies the ship, human sends the
+asteroids") is the *alternate* mode, same convention as Snake's default.
+Sender picks a target point; the asteroid always spawns from a random
+field edge aimed at that point, which structurally guarantees a minimum
+travel distance — never a point-blank unavoidable hit, without needing
+extra fairness logic. A shared spawn cooldown (1300ms → 550ms as global
+difficulty ramps) throttles both human clicking and computer spawning
+identically, so the difficulty ramp applies regardless of who holds which
+role. Computer pilot flees the nearest asteroid with difficulty-scaled
+reaction latency and aim jitter; computer sender aims at the ship's
+*current* (not predicted) position with jitter that shrinks as difficulty
+rises.
+
+**Verified:** Local server, live browser. Computer-vs-computer: ship
+actively dodged multiple simultaneous asteroids over an extended run,
+wrapped across edges correctly, never got hit — confirms the evasion
+logic is doing real work, not coasting. Separately, tested the losing path
+by leaving the (human) pilot completely idle at center while a computer
+sender attacked: observed asteroids missing narrowly early on (low
+difficulty → high jitter, as designed) and a near-miss later that passed
+within ~31px of the ship against a 23px collision threshold — good
+evidence the collision math is exactly as tight as coded, not accidentally
+too forgiving. Did **not** observe an actual triggered "Destroyed" game-over
+in this session (kept surviving/missing throughout the test window) — the
+code path is structurally identical to the already-confirmed game-over
+overlays in Snake/Breakout/Splat, but wasn't exercised live here. Human
+rotate/thrust uses the same held-key pattern already verified (at the
+event level) for Breakout's paddles — didn't re-test it, same harness
+limitation applies. **Recommend playtesting a full human-piloted run**,
+including actually crashing into an asteroid, before calling this done.
+
+---
+
 ### 2026-09-28 — Splat
 
 **Asked:** Build Splat, third real game, same Role/Agent pattern.
