@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Snake — The Cocktail Cabinet</title>
+<link rel="stylesheet" href="../../shared/css/game.css" />
+</head>
+<body class="game-page">
+
+  <div class="game-header">
+    <a class="back-link" href="../../">&larr; Cabinet</a>
+    <h1>Snake</h1>
+    <span style="width:4.5rem"></span>
+  </div>
+
+  <div id="role-assignment"></div>
+
+  <div class="game-hud">
+    <span>Score: <strong id="hud-score">0</strong></span>
+    <span>Speed: <strong id="hud-speed">–</strong></span>
+    <span>Status: <strong id="hud-status">Ready</strong></span>
+  </div>
+
+  <div class="game-canvas-frame">
+    <canvas id="game-canvas"></canvas>
+  </div>
+
+  <div class="game-controls">
+    <button class="game-btn" id="btn-start">Start</button>
+    <button class="game-btn" id="btn-restart">Restart</button>
+  </div>
+
+  <p class="game-note">
+    Steerer moves with arrow keys / WASD. Placer clicks an empty cell to place the next apple.
+    Assign either role to Human or Computer above — the rules engine doesn't know or care which is which.
+  </p>
+
+  <script type="module" src="snake.js"></script>
+</body>
+</html>

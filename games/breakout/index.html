@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Breakout — The Cocktail Cabinet</title>
+<link rel="stylesheet" href="../../shared/css/game.css" />
+</head>
+<body class="game-page">
+  <div class="game-header">
+    <a class="back-link" href="../../">&larr; Cabinet</a>
+    <h1>Breakout</h1>
+    <span style="width:4.5rem"></span>
+  </div>
+  <div class="coming-soon">
+    <p><strong>Roles:</strong> Paddle (Player A) vs Paddle/Wall (Player B — the flip is "computer plays against the human").</p>
+    <p>Planned: reuse <code>shared/js/agent.js</code> the same way Snake does — two Roles, each bindable to Human or Computer.
+    Computer paddle tracks the ball with a reaction-delay + max-speed cap that both scale with the difficulty curve,
+    so it's beatable early and merely very good late, never a perfect wall.</p>
+    <p>See <a href="../../ARCHITECTURE.md">ARCHITECTURE.md</a> for the full flip design.</p>
+  </div>
+</body>
+</html>

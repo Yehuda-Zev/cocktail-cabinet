@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Imitation — The Cocktail Cabinet</title>
+<link rel="stylesheet" href="../../shared/css/game.css" />
+</head>
+<body class="game-page">
+  <div class="game-header">
+    <a class="back-link" href="../../">&larr; Cabinet</a>
+    <h1>Imitation</h1>
+    <span style="width:4.5rem"></span>
+  </div>
+  <div class="coming-soon">
+    <p><strong>Two modes, both reached from this one page:</strong></p>
+    <p>1. <strong>Human vs Human</strong> — two separate browsers pair up over serverless WebRTC
+    (planned: <a href="https://github.com/dmotz/trystero" target="_blank" rel="noopener">Trystero</a>, no account/server needed).
+    Uses <code>shared/js/matchmaking.js</code> to fake a queueing delay so this mode looks identical to mode 2 while connecting.</p>
+    <p>2. <strong>Human vs AI</strong> — <em>not</em> a same-origin API call (no API keys allowed). Plan: build the AI side as a
+    separately-published Claude Artifact that uses the artifact runtime's own "ask Claude" capability — it runs through the
+    player's own claude.ai session in-browser, no key required. This page will link/embed that artifact once it exists.
+    This is flagged as an open decision — see <a href="../../ARCHITECTURE.md">ARCHITECTURE.md</a>.</p>
+    <p>Both modes go through the same fake matchmaking delay so an AI opponent is never instantly, suspiciously available.</p>
+  </div>
+</body>
+</html>

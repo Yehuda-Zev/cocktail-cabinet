@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Splat — The Cocktail Cabinet</title>
+<link rel="stylesheet" href="../../shared/css/game.css" />
+</head>
+<body class="game-page">
+  <div class="game-header">
+    <a class="back-link" href="../../">&larr; Cabinet</a>
+    <h1>Splat</h1>
+    <span style="width:4.5rem"></span>
+  </div>
+  <div class="coming-soon">
+    <p><strong>Roles:</strong> Column Layout (Player A) vs Runner (Player B — "human lays out the columns, computer gets through without cheating").</p>
+    <p>Planned: the layout role commits to gap positions ahead of time (like Snake's placer); the runner role reacts in real time.
+    "Without cheating" means the runner's strategy function only ever reads the same obstacle state a human would see on screen —
+    no peeking at future layout data the human hasn't revealed yet.</p>
+    <p>See <a href="../../ARCHITECTURE.md">ARCHITECTURE.md</a> for the full flip design.</p>
+  </div>
+</body>
+</html>

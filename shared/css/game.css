@@ -1,0 +1,125 @@
+/* Shared chrome for every game page: header/back link, role-assignment
+   control, HUD, canvas frame. Games only add their own canvas-drawing code. */
+
+body.game-page {
+  margin: 0;
+  min-height: 100vh;
+  background: radial-gradient(ellipse at top, #1a1a2e 0%, #0b0b12 60%);
+  color: #f2f2f8;
+  font-family: 'Courier New', monospace;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1.5rem 1rem 3rem;
+}
+
+.game-header {
+  width: 100%;
+  max-width: 720px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.game-header a.back-link {
+  color: #2de2ff;
+  text-decoration: none;
+  font-size: 0.85rem;
+}
+
+.game-header h1 {
+  font-size: 1.4rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #ffe94a;
+  margin: 0;
+}
+
+.role-assignment {
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  background: #14141f;
+  border: 1px solid #26263a;
+  border-radius: 8px;
+  padding: 0.75rem 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.role-assignment__item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.8rem;
+}
+
+.role-assignment__label {
+  color: #9a9ab0;
+  letter-spacing: 0.05em;
+}
+
+.role-assignment__select {
+  background: #0b0b12;
+  color: #f2f2f8;
+  border: 1px solid #3a3a52;
+  border-radius: 4px;
+  padding: 0.3rem 0.5rem;
+  font-family: inherit;
+}
+
+.game-hud {
+  display: flex;
+  gap: 1.5rem;
+  font-size: 0.85rem;
+  color: #9a9ab0;
+  margin-bottom: 0.6rem;
+}
+
+.game-hud strong { color: #f2f2f8; }
+
+.game-canvas-frame {
+  border: 2px solid #26263a;
+  border-radius: 8px;
+  background: #000;
+  box-shadow: 0 0 30px rgba(45, 226, 255, 0.08);
+}
+
+.game-controls {
+  margin-top: 1rem;
+  display: flex;
+  gap: 0.75rem;
+}
+
+.game-btn {
+  background: #14141f;
+  border: 1px solid #3a3a52;
+  color: #f2f2f8;
+  padding: 0.5rem 1.1rem;
+  border-radius: 6px;
+  font-family: inherit;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.game-btn:hover { border-color: #2de2ff; }
+
+.game-note {
+  max-width: 640px;
+  margin-top: 1.5rem;
+  font-size: 0.8rem;
+  color: #9a9ab0;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.coming-soon {
+  margin-top: 2rem;
+  padding: 2rem 2.5rem;
+  border: 1px dashed #3a3a52;
+  border-radius: 10px;
+  text-align: center;
+  color: #9a9ab0;
+  max-width: 560px;
+}

@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Asteroids — The Cocktail Cabinet</title>
+<link rel="stylesheet" href="../../shared/css/game.css" />
+</head>
+<body class="game-page">
+  <div class="game-header">
+    <a class="back-link" href="../../">&larr; Cabinet</a>
+    <h1>Asteroids</h1>
+    <span style="width:4.5rem"></span>
+  </div>
+  <div class="coming-soon">
+    <p><strong>Roles:</strong> Pilot (Player A) vs Asteroid Sender (Player B — "computer flies the ship, human sends the asteroids").</p>
+    <p>Planned: mirrors Snake's steerer/placer split. Computer pilot uses a steering strategy (avoid nearest threats,
+    thrust toward open space) scaled by difficulty; computer sender picks spawn angle/speed/size scaled by difficulty,
+    always respecting a minimum "fair spawn" distance from the ship so it's never an instant unavoidable hit.</p>
+    <p>See <a href="../../ARCHITECTURE.md">ARCHITECTURE.md</a> for the full flip design.</p>
+  </div>
+</body>
+</html>
