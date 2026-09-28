@@ -5,6 +5,45 @@ and how we verified it. Kept as we go, not written after the fact.
 
 ---
 
+### 2026-09-28 — Breakout
+
+**Asked:** Build Breakout as the second real game, following the Role/Agent
+pattern from Snake.
+
+**Produced:** `games/breakout/breakout.js` + updated `games/breakout/index.html`.
+Unlike Snake's asymmetric roles, the assignment's flip for Breakout
+("computer plays against the human") is symmetric — so this is a
+competitive two-paddle Breakout: bottom paddle vs top paddle, ball rallies
+through a shared brick field in the middle, first to 7 points wins. Both
+paddles are the *same* Role type, each independently bindable to Human or
+Computer. Computer paddle AI predicts the ball's landing x-position with a
+difficulty-scaled blend of "react to current position" vs "full straight-
+line prediction," plus reaction latency and jitter that shrink as
+difficulty ramps — same shape as Snake's computer opponent, not copy-pasted
+but following the same recipe.
+
+**Verified:** Ran it through a local server and drove a full
+computer-vs-computer match in-browser for several minutes of real
+gameplay: both paddles tracked and returned the ball repeatedly, bricks
+broke correctly on contact, ball speed climbed with elapsed time (210 →
+220px/s and climbing) exactly per the difficulty curve, no phantom
+collisions or paddle desync observed.
+
+Also checked the human-control path (arrow keys / A-D): confirmed via a
+console log that keydown/keyup fire and match the expected key codes
+correctly, so the event wiring itself is sound. Could **not** confirm the
+felt experience of holding a key down, though — the automated browser tool
+used for testing taps and releases keys almost instantly rather than
+holding them, and this sandbox's render loop only advances during certain
+tool actions, so no physics tick ever lands inside that brief press
+window. That's a limitation of the test harness, not evidence the paddle
+control is broken (the underlying keydown/keyup-into-a-held-Set pattern is
+standard and was verified at the event level), but it's still unconfirmed
+by an actual play session. **Recommend you personally playtest holding
+Arrow Left/Right and A/D before considering Breakout fully done.**
+
+---
+
 ### 2026-09-28 — Project scaffold
 
 **Asked:** Set up the base framework for the cocktail cabinet — folder
