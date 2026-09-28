@@ -1,0 +1,118 @@
+.imitation-frame {
+  width: 100%;
+  max-width: 640px;
+  display: flex;
+  justify-content: center;
+}
+
+.imitation-screen {
+  width: 100%;
+  background: #14141f;
+  border: 1px solid #26263a;
+  border-radius: 10px;
+  padding: 1.75rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  text-align: center;
+}
+
+.imitation-screen[hidden] {
+  display: none;
+}
+
+.imitation-screen--wide {
+  max-width: 640px;
+  align-items: stretch;
+  text-align: left;
+}
+
+.imitation-status {
+  font-size: 1rem;
+  color: #f2f2f8;
+}
+
+.imitation-spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid #26263a;
+  border-top-color: #2de2ff;
+  border-radius: 50%;
+  animation: imitation-spin 0.9s linear infinite;
+}
+
+@keyframes imitation-spin {
+  to { transform: rotate(360deg); }
+}
+
+.imitation-chat-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+  color: #9a9ab0;
+}
+
+.imitation-log {
+  height: 320px;
+  overflow-y: auto;
+  border: 1px solid #26263a;
+  border-radius: 8px;
+  background: #0b0b12;
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.imitation-msg {
+  max-width: 80%;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.imitation-msg--me {
+  align-self: flex-end;
+  background: #1a8fa8;
+  color: #f2f2f8;
+}
+
+.imitation-msg--them {
+  align-self: flex-start;
+  background: #26263a;
+  color: #f2f2f8;
+}
+
+.imitation-msg--system {
+  align-self: center;
+  background: none;
+  color: #9a9ab0;
+  font-style: italic;
+  font-size: 0.8rem;
+}
+
+.imitation-input-row {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.imitation-input-row input {
+  flex: 1;
+  background: #0b0b12;
+  color: #f2f2f8;
+  border: 1px solid #3a3a52;
+  border-radius: 6px;
+  padding: 0.6rem 0.75rem;
+  font-family: inherit;
+  font-size: 0.9rem;
+}
+
+.imitation-guess-buttons {
+  display: flex;
+  gap: 1rem;
+}

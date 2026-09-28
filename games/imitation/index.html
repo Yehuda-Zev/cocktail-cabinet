@@ -5,23 +5,62 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Imitation — The Cocktail Cabinet</title>
 <link rel="stylesheet" href="../../shared/css/game.css" />
+<link rel="stylesheet" href="imitation.css" />
 </head>
 <body class="game-page">
+
   <div class="game-header">
     <a class="back-link" href="../../">&larr; Cabinet</a>
     <h1>Imitation</h1>
     <span style="width:4.5rem"></span>
   </div>
-  <div class="coming-soon">
-    <p><strong>Two modes, both reached from this one page:</strong></p>
-    <p>1. <strong>Human vs Human</strong> — two separate browsers pair up over serverless WebRTC
-    (planned: <a href="https://github.com/dmotz/trystero" target="_blank" rel="noopener">Trystero</a>, no account/server needed).
-    Uses <code>shared/js/matchmaking.js</code> to fake a queueing delay so this mode looks identical to mode 2 while connecting.</p>
-    <p>2. <strong>Human vs AI</strong> — <em>not</em> a same-origin API call (no API keys allowed). Plan: build the AI side as a
-    separately-published Claude Artifact that uses the artifact runtime's own "ask Claude" capability — it runs through the
-    player's own claude.ai session in-browser, no key required. This page will link/embed that artifact once it exists.
-    This is flagged as an open decision — see <a href="../../ARCHITECTURE.md">ARCHITECTURE.md</a>.</p>
-    <p>Both modes go through the same fake matchmaking delay so an AI opponent is never instantly, suspiciously available.</p>
+
+  <div class="imitation-frame">
+
+    <section id="screen-intro" class="imitation-screen">
+      <p>You'll be paired with an opponent in another browser — chat for up to 90 seconds, then
+      guess whether you were talking to a <strong>human</strong> or the <strong>AI</strong>.
+      Matchmaking never connects instantly, on purpose.</p>
+      <button class="game-btn" id="btn-find-match">Find a Match</button>
+      <p class="game-note" id="human-mode-note">
+        Right now this only pairs you with another human in a second browser tab — open this
+        page in two tabs (or ask a friend) and click "Find a Match" in both. The AI opponent
+        mode is still being built.
+      </p>
+    </section>
+
+    <section id="screen-matching" class="imitation-screen" hidden>
+      <p class="imitation-status" id="matching-status">Searching for an opponent…</p>
+      <div class="imitation-spinner" aria-hidden="true"></div>
+    </section>
+
+    <section id="screen-chat" class="imitation-screen imitation-screen--wide" hidden>
+      <div class="imitation-chat-header">
+        <span>Time left: <strong id="chat-timer">90</strong>s</span>
+        <button class="game-btn" id="btn-ready-guess">I'm Ready to Guess</button>
+      </div>
+      <div class="imitation-log" id="chat-log"></div>
+      <form class="imitation-input-row" id="chat-form">
+        <input type="text" id="chat-input" placeholder="Type a message…" autocomplete="off" maxlength="300" />
+        <button class="game-btn" type="submit">Send</button>
+      </form>
+    </section>
+
+    <section id="screen-guess" class="imitation-screen" hidden>
+      <p>Who were you talking to?</p>
+      <div class="imitation-guess-buttons">
+        <button class="game-btn" id="btn-guess-human">Human</button>
+        <button class="game-btn" id="btn-guess-ai">AI</button>
+      </div>
+    </section>
+
+    <section id="screen-result" class="imitation-screen" hidden>
+      <p class="imitation-status" id="result-text"></p>
+      <button class="game-btn" id="btn-play-again">Play Again</button>
+    </section>
+
   </div>
+
+  <script type="module" src="imitation.js"></script>
 </body>
 </html>

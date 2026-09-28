@@ -69,12 +69,44 @@ so it stays a pure static site.
 | Asteroids | Pilot (rotate/thrust/wrap) | Asteroid Sender (click a target, spawns from a random edge) | **Implemented** |
 | Missile Command | Defender (click to fire interceptor, fixed cooldown) | Attacker (click to aim missile at the ground) | **Implemented** |
 | Tetris (our pick) | *open — design ourselves* | | Not started |
-| Imitation | Human/AI conversant, other side | matched via network or artifact | Scaffolded, see below |
+| Imitation | Judge (chats, then guesses Human/AI) | opponent — human (**implemented**) or AI (open) | **Human vs Human implemented**; AI side open |
+
+## Imitation: human-vs-human networking (resolved)
+
+Built on **Trystero**, but one detail differs from the original plan: the
+**BitTorrent-tracker strategy (`@trystero-p2p/torrent`) never connected in
+testing** — its three default tracker WebSockets all failed repeatedly in
+this dev sandbox. Switched to the **Nostr relay strategy
+(`@trystero-p2p/torrent` → `@trystero-p2p/nostr`)**, which connected in
+under 8 seconds in the same environment and is Trystero's own recommended
+default. Same properties either way (serverless, no account, static-site
+friendly) — just a different public relay network for peer discovery.
+Also worth knowing: the npm package itself moved from unscoped `trystero`
+to scoped `@trystero-p2p/<strategy>` packages, and the CDN import needs
+jsDelivr's `+esm` bundling endpoint (plain `dist/index.mjs` has internal
+bare-specifier imports jsDelivr won't resolve on its own):
+
+```js
+import { joinRoom, selfId } from 'https://cdn.jsdelivr.net/npm/@trystero-p2p/nostr/+esm';
+```
+
+**Matchmaking protocol** (`games/imitation/imitation.js`): everyone
+looking for an opponent joins one shared `lobby` room under a fixed
+`appId`. On meeting a peer there, both sides exchange `selfId`s; whoever
+has the lower ID proposes a fresh private room (`match-<sortedIds>`) and
+both leave the lobby to join it. This avoids a real matchmaking server
+while still only ever pairing two people at a time. Verified live with two
+real browser tabs: lobby handshake, room handoff, bidirectional chat, and
+peer-disconnect handling (opponent leaving mid-chat surfaces a system
+message and disables input) all confirmed working.
+
+The chat UI, 90-second timer, and Human/AI guess-and-reveal screen are
+built and reused as-is for whichever opponent type is behind
+`startMatchmaking()` — the AI path just needs to plug into the same
+`enterChatPhase()` call once it exists, so the player can't tell which
+they got from timing or UI differences.
 
 ## Open decisions (architect sign-off needed)
-
-These are flagged rather than silently decided, because they affect things
-outside pure game logic (accounts, hosting, embedding):
 
 1. **Imitation's AI mode.** Per your professor's note, the plan is to
    publish the AI conversant as a separate **Claude Artifact** using the
@@ -83,19 +115,19 @@ outside pure game logic (accounts, hosting, embedding):
    through Claude in your own browser" without us doing anything clever. Two
    integration approaches, need a decision:
    - **Link out**: the Netlify page opens the artifact's `claude.ai/artifact/...`
-     URL in a new tab. Simple, always works, but breaks the "one page" framing
-     a little (the assignment's overview says "single web page," though the
-     per-game flip table implies separate game pages are fine — the cabinet
-     hub is the "single web page").
-   - **Iframe embed**: the Netlify page embeds the artifact inline. Nicer UX,
-     but claude.ai's frame-ancestors policy may block this — needs testing
-     before we commit to it.
-   Recommendation: build the artifact first, test whether it can be iframed,
-   fall back to link-out if not.
-2. **Imitation's human-vs-human networking.** Defaulted to **Trystero**
-   (serverless WebRTC over public trackers, no account) since it wasn't
-   picked explicitly. Confirm or override before building.
-3. **Tetris's flip** — still ours to design (assignment's "your own game"
+     URL in a new tab. Simple, always works, but opening a new tab to
+     claude.ai the moment you're matched with the AI is a dead giveaway —
+     likely fails the "not obvious" requirement on its own.
+   - **Iframe embed**: the Netlify page embeds the artifact inline,
+     styled to match the human-chat UI exactly. This is the one that
+     actually satisfies "not obvious" — but whether claude.ai's
+     frame-ancestors policy allows being iframed by another origin is
+     still untested.
+   Recommendation: build the artifact first, test whether it can be
+   iframed, fall back to a disguised link-out (e.g. always opening
+   *something* in a new tab, human or AI, so the tab itself isn't a tell)
+   if not.
+2. **Tetris's flip** — still ours to design (assignment's "your own game"
    slot), not locked in. Missile Command's flip is now resolved: Defender
    (fires interceptors that detonate into an expanding blast on arrival)
    vs. Attacker (aims missiles at the ground, five cities to defend).

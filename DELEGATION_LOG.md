@@ -5,6 +5,61 @@ and how we verified it. Kept as we go, not written after the fact.
 
 ---
 
+### 2026-09-28 — Imitation, human-vs-human path
+
+**Asked:** Build the human-vs-human half of Imitation (matchmaking + chat
++ guess), deferring the AI half until the iframe question is resolved.
+
+**Produced:** `games/imitation/imitation.js`, `imitation.css`, rewritten
+`index.html`. Real serverless P2P matchmaking and chat via Trystero, a
+90-second timed chat phase, and a Human/AI guess screen with reveal.
+
+**What went differently than planned, and why:** Before writing any game
+code, tested the actual library integration directly in the browser
+rather than trusting memory of its API — good thing, because both the
+import path and the networking strategy from the original plan were
+wrong:
+- `trystero`'s BitTorrent-tracker strategy is what ARCHITECTURE.md
+  originally named, but all three of its default tracker WebSocket
+  connections failed repeatedly in live testing. Switched to the Nostr
+  relay strategy instead, which connected in under 8 seconds — full
+  details in `ARCHITECTURE.md`.
+- The package has moved to scoped names (`@trystero-p2p/nostr`, not
+  `trystero`) and needs jsDelivr's `+esm` bundling endpoint, not a
+  straight `dist/*.mjs` import — the raw dist file has internal bare
+  module specifiers a plain CDN fetch can't resolve.
+- `makeAction()`'s return shape and the peer-join/message callback API
+  are also different from what I expected (object with `.send`/
+  `.onMessage` properties, not an array-destructured pair) — caught by a
+  real runtime error on first attempt, not assumed.
+
+Building this incrementally in a scratch test page (raw library import →
+single ping between two tabs → full lobby/pairing protocol) caught all of
+this cheaply, before it was buried inside the real game's code.
+
+**Bug found and fixed in the real build:** all five game screens
+(`intro`/`matching`/`chat`/`guess`/`result`) rendered simultaneously,
+stacked in a row, instead of one at a time. Cause: `.imitation-screen
+{ display: flex }` (an author class rule) overrides the browser's default
+`[hidden] { display: none }` rule, since author styles win regardless of
+selector specificity. Fixed with an explicit `.imitation-screen[hidden] {
+display: none }` rule.
+
+**Verified:** Opened the real page in two separate browser tabs, clicked
+"Find a Match" in both, and confirmed live: lobby pairing found each
+other, both transitioned to chat at the same time, messages sent from
+each tab arrived correctly in the other's log, the timer counted down,
+"I'm Ready to Guess" transitioned correctly, guessing "Human" revealed
+the correct result ("You were actually talking to a HUMAN. Correct!"),
+and closing one side correctly surfaced "Your opponent disconnected." in
+the other tab's chat log.
+
+**Not done yet:** the AI half. `startMatchmaking()` has a marked TODO
+where it will plug in once the Claude Artifact / iframe question is
+resolved.
+
+---
+
 ### 2026-09-28 — Two bugs from actual playtesting
 
 **Asked:** "The AI in Splat is really bad" and "the missiles in Missile
