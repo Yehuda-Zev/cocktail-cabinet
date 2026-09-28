@@ -7,17 +7,38 @@
 <link rel="stylesheet" href="../../shared/css/game.css" />
 </head>
 <body class="game-page">
+
   <div class="game-header">
     <a class="back-link" href="../../">&larr; Cabinet</a>
     <h1>Splat</h1>
     <span style="width:4.5rem"></span>
   </div>
-  <div class="coming-soon">
-    <p><strong>Roles:</strong> Column Layout (Player A) vs Runner (Player B — "human lays out the columns, computer gets through without cheating").</p>
-    <p>Planned: the layout role commits to gap positions ahead of time (like Snake's placer); the runner role reacts in real time.
-    "Without cheating" means the runner's strategy function only ever reads the same obstacle state a human would see on screen —
-    no peeking at future layout data the human hasn't revealed yet.</p>
-    <p>See <a href="../../ARCHITECTURE.md">ARCHITECTURE.md</a> for the full flip design.</p>
+
+  <div id="role-assignment"></div>
+
+  <div class="game-hud">
+    <span>Score: <strong id="hud-score">0</strong></span>
+    <span>Speed: <strong id="hud-speed">–</strong></span>
+    <span>Status: <strong id="hud-status">Ready</strong></span>
   </div>
+
+  <div class="game-canvas-frame">
+    <canvas id="game-canvas"></canvas>
+  </div>
+
+  <div class="game-controls">
+    <button class="game-btn" id="btn-start">Start</button>
+    <button class="game-btn" id="btn-restart">Restart</button>
+  </div>
+
+  <p class="game-note">
+    Runner: press Space to flap upward, gravity pulls you down — get through the gap in each
+    column before it reaches you. Layout: click anywhere on an upcoming (dashed) column to set
+    its gap — it locks solid once it crosses the white line, no more edits after that. The
+    runner can only ever react to locked columns, human or computer, so nothing is peeking
+    ahead.
+  </p>
+
+  <script type="module" src="splat.js"></script>
 </body>
 </html>

@@ -5,6 +5,41 @@ and how we verified it. Kept as we go, not written after the fact.
 
 ---
 
+### 2026-09-28 — Splat
+
+**Asked:** Build Splat, third real game, same Role/Agent pattern.
+
+**Produced:** `games/splat/splat.js` + updated `games/splat/index.html`. Built
+as a Flappy-Bird-style runner (gravity + flap impulse) rather than a literal
+"columns list" — fits "get through the gap in each column" directly, and
+flap-on-keypress is a discrete action rather than a held key, which matters
+for testability (see Breakout's note on why held keys can't be verified
+here). Fairness is architectural, not just documented: each column has a
+`locked` flag; it starts editable (dashed on screen) while it scrolls in
+from the right, and freezes permanently once it crosses a visible lock
+line. The runner's computer strategy filters to `c.locked` columns only —
+it is structurally incapable of reacting to a gap that hasn't been fixed
+yet, whether a human or the computer placed it.
+
+**Verified:** Local server, live browser, computer-vs-computer (layout AI +
+runner AI). Confirmed: columns spawn and scroll correctly, transition from
+dashed/editable to solid/locked exactly at the lock line, the runner's flap
+decisions keep it tracking inside the gap band across multiple screenshots,
+speed ramps with elapsed time (152 → 156px/s), no false game-overs. Did
+**not** get a confirmed scored pass or a confirmed collision in this
+session — this sandbox's render loop only advances during active tool
+calls (same artifact noted for Snake/Breakout), so watching a column
+actually travel the full field in real time was too slow to be worth
+the tool calls. Also did not get a clean pixel-accurate confirmation of
+the human-layout click handler (canvas coordinate math in this specific
+browser-automation harness didn't resolve cleanly), though the handler
+uses the identical getBoundingClientRect-relative pattern already verified
+for Snake's placer. **Recommend playtesting a full run yourself** —
+specifically watch for an actual scored pass and an actual splat, and try
+clicking to steer the layout as a human.
+
+---
+
 ### 2026-09-28 — Breakout
 
 **Asked:** Build Breakout as the second real game, following the Role/Agent
