@@ -7,15 +7,37 @@
 <link rel="stylesheet" href="../../shared/css/game.css" />
 </head>
 <body class="game-page">
+
   <div class="game-header">
     <a class="back-link" href="../../">&larr; Cabinet</a>
     <h1>Missile Command</h1>
     <span style="width:4.5rem"></span>
   </div>
-  <div class="coming-soon">
-    <p><strong>Roles:</strong> ours to design (assignment says "design the flip yourself").</p>
-    <p>Candidate: Defender (aims interceptors at incoming missiles) vs Attacker (chooses missile launch timing/targets/speed).
-    Not locked in yet — open decision, see <a href="../../ARCHITECTURE.md">ARCHITECTURE.md</a>.</p>
+
+  <div id="role-assignment"></div>
+
+  <div class="game-hud">
+    <span>Intercepted: <strong id="hud-score">0</strong></span>
+    <span>Cities: <strong id="hud-cities">5/5</strong></span>
+    <span>Status: <strong id="hud-status">Ready</strong></span>
   </div>
+
+  <div class="game-canvas-frame">
+    <canvas id="game-canvas"></canvas>
+  </div>
+
+  <div class="game-controls">
+    <button class="game-btn" id="btn-start">Start</button>
+    <button class="game-btn" id="btn-restart">Restart</button>
+  </div>
+
+  <p class="game-note">
+    Defender: click anywhere in the sky to fire an interceptor there — it detonates on arrival and
+    destroys any missile caught in the blast. A fixed cooldown limits your rate of fire (same for
+    human and computer). Attacker: click along the ground to aim a missile at that spot. Game ends
+    when all five cities are destroyed.
+  </p>
+
+  <script type="module" src="missile-command.js"></script>
 </body>
 </html>

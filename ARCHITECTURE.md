@@ -64,10 +64,10 @@ so it stays a pure static site.
 | Game | Role A | Role B | Status |
 |---|---|---|---|
 | Snake | Steerer (arrow keys / pathfinding) | Apple Placer (click cell / risk-scored placement) | **Implemented** — reference example |
-| Breakout | Paddle (human side) | Paddle/ball-control (computer side) | Scaffolded, not built |
-| Splat | Column Layout | Runner | Scaffolded, not built |
-| Asteroids | Pilot | Asteroid Sender | Scaffolded, not built |
-| Missile Command | *open — design ourselves* | | Not started |
+| Breakout | Bottom Paddle | Top Paddle (same Role type, symmetric flip) | **Implemented** |
+| Splat | Column Layout (click to set gap, locks at a line) | Runner (flap/gravity, reacts only to locked columns) | **Implemented** |
+| Asteroids | Pilot (rotate/thrust/wrap) | Asteroid Sender (click a target, spawns from a random edge) | **Implemented** |
+| Missile Command | Defender (click to fire interceptor, fixed cooldown) | Attacker (click to aim missile at the ground) | **Implemented** |
 | Tetris (our pick) | *open — design ourselves* | | Not started |
 | Imitation | Human/AI conversant, other side | matched via network or artifact | Scaffolded, see below |
 
@@ -95,8 +95,10 @@ outside pure game logic (accounts, hosting, embedding):
 2. **Imitation's human-vs-human networking.** Defaulted to **Trystero**
    (serverless WebRTC over public trackers, no account) since it wasn't
    picked explicitly. Confirm or override before building.
-3. **Missile Command's flip** and **Tetris's flip** — candidates proposed
-   in their stub pages, not locked in.
+3. **Tetris's flip** — still ours to design (assignment's "your own game"
+   slot), not locked in. Missile Command's flip is now resolved: Defender
+   (fires interceptors that detonate into an expanding blast on arrival)
+   vs. Attacker (aims missiles at the ground, five cities to defend).
 
 ## Delegation
 

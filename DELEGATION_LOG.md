@@ -5,6 +5,45 @@ and how we verified it. Kept as we go, not written after the fact.
 
 ---
 
+### 2026-09-28 — Missile Command
+
+**Asked:** Design and build Missile Command's flip (the assignment left it
+open), fifth real game.
+
+**Produced:** `games/missile-command/missile-command.js` + updated
+`games/missile-command/index.html`. Explained the original 1980 arcade game
+first, then proposed and built: Defender (fires interceptors that detonate
+into an expanding/fading blast radius on arrival, destroying any missile
+caught in it) vs. Attacker (aims missiles at one of five cities along the
+ground). Computer defender predicts an intercept point via a few rounds of
+fixed-point iteration (interceptor travel time depends on where it's
+going, which depends on travel time — solved by iterating ~5 times rather
+than deriving a closed form), with aim jitter and reaction latency shrinking
+as difficulty rises, same recipe as every other computer opponent in this
+project. Fire rate is capped by a *constant* cooldown shared by human and
+computer defenders alike (350ms) — deliberately not difficulty-scaled,
+since that's the skill a human exercises, unlike the attacker's spawn
+cooldown which does tighten with global difficulty (1600ms → 700ms).
+Updated `ARCHITECTURE.md`'s flip table, which had gone stale since
+Breakout (Splat and Asteroids were marked "not built" despite being
+shipped) — fixed all four rows while in there.
+
+**Verified:** Local server, live browser, computer-vs-computer. This one
+went better than prior sessions: watched the defender actually predict,
+fire, and successfully intercept an incoming missile (score went 0 → 1),
+with the explosion rendering and fading correctly on screen, all cities
+staying alive (5/5) across the observed window. This is the strongest
+live confirmation yet of a full simulation loop in this project — spawn,
+predict, intercept, explode, score all observed working together in one
+sitting, not just inferred from partial evidence. Did **not** observe a
+missile actually hitting a city (defender was simply too effective in the
+window I watched) or the "Overrun" game-over screen, and did not test
+human click-to-aim for either role (same harness limitation as prior
+entries). **Recommend playtesting** a losing scenario and both human
+control schemes.
+
+---
+
 ### 2026-09-28 — Asteroids
 
 **Asked:** Build Asteroids, fourth real game, same Role/Agent pattern.
