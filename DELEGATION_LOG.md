@@ -5,6 +5,61 @@ and how we verified it. Kept as we go, not written after the fact.
 
 ---
 
+### 2026-09-29 — Imitation, AI opponent
+
+**Asked:** Resolve the open iframe-vs-link-out question for Imitation's AI
+side, then build whichever it turned out to be.
+
+**Produced:**
+- **Turing Booth** — a separately published Claude Artifact
+  (`https://claude.ai/artifact/1yeHi97ec9a9HV3iRG79Sp`) using the
+  `sample` capability to have Claude play an in-character human in a
+  Turing-test chat, with instructions to stay in character and deny
+  being an AI if asked directly.
+- Rewrote `games/imitation/imitation.js`: a 50/50 coin flip decides human
+  vs. AI on "Find a Match"; both outcomes open a new bare popup window
+  (`games/imitation/chat.html` + `chat.js` for the human path, the
+  artifact URL for the AI path) after the same matchmaking delay, with
+  the timer and guess/reveal screen staying on the main page for both
+  cases so that part is identical either way.
+
+**What we learned that changed the plan:** tested whether the artifact
+could be iframed before writing any of the popup/routing logic — it
+can't (claude.ai sends `frame-ancestors 'self' <extensions only>`, a
+hard platform-level block). That also surfaced that the artifact needs
+to be set to "Anyone with the link" sharing by its owner (done by the
+user via the Share menu — not something this session can do), and that
+even then a visitor still needs their own claude.ai account signed in to
+actually use `sample`, though viewing the page doesn't require it. Given
+link-out was the only remaining option, and the user confirmed after
+testing that a plain link-out felt obviously like "being sent to an
+artifact," the design shifted to minimizing that tell rather than
+eliminating it: strip our own chat window down to the same bare
+no-chrome layout the artifact has, and make both outcomes open a new
+window through the identical mechanism and timing.
+
+**Verified:** Chatted with the published Turing Booth artifact directly
+(the user did this, since the sandboxed test browser isn't signed into
+any claude.ai account) — confirmed it replies in character, denies being
+an AI when asked, and never breaks. Separately verified the popup-blocked
+fallback path renders the right error state in that sandboxed browser,
+which turned out useful: the automation environment blocks
+`window.open()` even from within a click handler, so every test ran
+through the fallback link instead of a real popup — this incidentally
+gave thorough coverage of that path specifically. Using the fallback
+links, verified live with three browser tabs: human-vs-human matching
+correctly produces the same room id on both sides, `chat.html` joins that
+room directly and exchanges messages bidirectionally, the main window's
+timer and "I'm Ready to Guess" transition correctly, and guessing
+correctly reveals "Correct!" for both a real human match and a forced AI
+match (used a temporary `?force=human|ai` URL override during testing,
+removed before committing). **Not verified in this session:** an actual
+successful `window.open()` popup in a real, non-sandboxed browser — the
+code path is standard and the fallback is confirmed solid, but the happy
+path where a popup just opens cleanly needs a real playtest.
+
+---
+
 ### 2026-09-28 — Imitation, human-vs-human path
 
 **Asked:** Build the human-vs-human half of Imitation (matchmaking + chat

@@ -1,19 +1,22 @@
-// Imitation: pairs two browsers over serverless WebRTC (Trystero, Nostr
-// relay strategy -- verified live, no account/server needed) via a
-// lobby-then-private-room handoff, then runs a timed chat + guess.
+// Imitation: pairs the player with a human (over serverless WebRTC via
+// Trystero) or the AI (a separate Claude Artifact, "Turing Booth" --
+// necessary because the `sample` capability that lets it ask Claude with
+// no API key only exists on a page viewed through claude.ai's own
+// artifact viewer; there is no way to call it from a page on this site).
 //
-// This file currently only implements the HUMAN-vs-HUMAN path. The
-// human-vs-AI path is a separate, not-yet-built piece (see
-// ARCHITECTURE.md's open decisions) -- `startMatchmaking()` is the seam
-// where it will plug in: once built, a coin flip there will route either
-// to `connectToHumanOpponent()` (this file) or an AI connector, both
-// funneling into the same `enterChatPhase()` so the player can't tell
-// which one they got from timing or UI alone.
+// Both outcomes open in a new, deliberately bare popup window (no cabinet
+// chrome) after the same matchmaking delay, so the transition itself
+// gives nothing away. The chat happens entirely in that popup; this page
+// keeps the timer and runs the Human/AI guess + reveal once the player
+// comes back, so that part of the experience is identical either way.
+// Full writeup of why full disguise isn't possible: ARCHITECTURE.md.
 
 import { joinRoom, selfId } from 'https://cdn.jsdelivr.net/npm/@trystero-p2p/nostr/+esm';
 
 const APP_ID = 'cocktail-cabinet-imitation-v1';
 const LOBBY_ROOM_ID = 'lobby';
+const AI_ARTIFACT_URL = 'https://claude.ai/artifact/1yeHi97ec9a9HV3iRG79Sp';
+const POPUP_FEATURES = 'width=420,height=640,noopener';
 const CHAT_SECONDS = 90;
 const MIN_MATCHMAKING_MS = 3000;
 const STATUS_MESSAGES = [
@@ -70,10 +73,10 @@ function transitionOnceMinimumElapsed(onReady) {
 // ---------------------------------------------------------------------
 // Human-vs-human pairing: everyone looking for a match joins a shared
 // lobby room, announces themselves, and the two lowest-sorted IDs pair
-// off into a fresh private room, then both leave the lobby.
+// off, agreeing on a private room id. This page never joins that private
+// room itself -- it hands the id to the popup and lets that page connect.
 // ---------------------------------------------------------------------
 let lobby = null;
-let matchRoom = null;
 let paired = false;
 
 function connectToHumanOpponent(onPaired) {
@@ -92,63 +95,63 @@ function connectToHumanOpponent(onPaired) {
       paired = true;
       const roomId = 'match-' + [selfId, data.id].sort().join('-');
       proposeMatch.send({ roomId }, { target: meta.peerId });
-      joinMatchRoom(roomId, onPaired);
+      lobby.leave();
+      lobby = null;
+      onPaired(roomId);
     }
   };
 
   proposeMatch.onMessage = (data) => {
     if (paired) return;
     paired = true;
-    joinMatchRoom(data.roomId, onPaired);
+    lobby.leave();
+    lobby = null;
+    onPaired(data.roomId);
   };
 }
 
-function joinMatchRoom(roomId, onPaired) {
-  lobby.leave();
-  lobby = null;
-  matchRoom = joinRoom({ appId: APP_ID }, roomId);
-  const chat = matchRoom.makeAction('chat');
-  onPaired({ room: matchRoom, chat, opponentType: 'human' });
+// ---------------------------------------------------------------------
+// Opening the opponent's chat window
+// ---------------------------------------------------------------------
+let opponentType = null;
+let opponentWindow = null;
+
+function openOpponentWindow(info, popup) {
+  opponentType = info.kind;
+  opponentWindow = popup;
+  const url = info.kind === 'ai'
+    ? AI_ARTIFACT_URL
+    : `chat.html?room=${encodeURIComponent(info.roomId)}`;
+
+  const fallbackEl = document.getElementById('popup-fallback');
+  if (popup && !popup.closed) {
+    popup.location.href = url;
+    fallbackEl.hidden = true;
+  } else {
+    fallbackEl.hidden = false;
+    fallbackEl.innerHTML = '';
+    const link = document.createElement('a');
+    link.href = url;
+    link.target = '_blank';
+    link.rel = 'noopener';
+    link.textContent = 'Your browser blocked the popup — click here to open your chat';
+    link.style.color = '#2de2ff';
+    fallbackEl.appendChild(link);
+  }
+
+  enterWaitingPhase();
 }
 
 // ---------------------------------------------------------------------
-// Chat phase
+// Waiting phase (main window): just the timer, while chat happens in the
+// popup.
 // ---------------------------------------------------------------------
-const chatLog = document.getElementById('chat-log');
-const chatForm = document.getElementById('chat-form');
-const chatInput = document.getElementById('chat-input');
 const chatTimerEl = document.getElementById('chat-timer');
 const btnReadyGuess = document.getElementById('btn-ready-guess');
-
-let activeChat = null;
 let chatTimerHandle = null;
-let opponentType = null;
-let opponentLeft = false;
 
-function appendMessage(kind, text) {
-  const div = document.createElement('div');
-  div.className = 'imitation-msg imitation-msg--' + kind;
-  div.textContent = text;
-  chatLog.appendChild(div);
-  chatLog.scrollTop = chatLog.scrollHeight;
-}
-
-function enterChatPhase({ room, chat, opponentType: type }) {
-  activeChat = chat;
-  opponentType = type;
-  opponentLeft = false;
-  chatLog.innerHTML = '';
-  chatInput.value = '';
-  chatInput.disabled = false;
+function enterWaitingPhase() {
   showScreen('chat');
-
-  chat.onMessage = (text) => appendMessage('them', text);
-  room.onPeerLeave = () => {
-    opponentLeft = true;
-    appendMessage('system', 'Your opponent disconnected.');
-    chatInput.disabled = true;
-  };
-
   let secondsLeft = CHAT_SECONDS;
   chatTimerEl.textContent = String(secondsLeft);
   chatTimerHandle = setInterval(() => {
@@ -161,15 +164,6 @@ function enterChatPhase({ room, chat, opponentType: type }) {
   }, 1000);
 }
 
-chatForm.addEventListener('submit', (e) => {
-  e.preventDefault();
-  const text = chatInput.value.trim();
-  if (!text || !activeChat) return;
-  appendMessage('me', text);
-  activeChat.send(text);
-  chatInput.value = '';
-});
-
 btnReadyGuess.addEventListener('click', () => {
   clearInterval(chatTimerHandle);
   goToGuessPhase();
@@ -181,6 +175,7 @@ btnReadyGuess.addEventListener('click', () => {
 const resultTextEl = document.getElementById('result-text');
 
 function goToGuessPhase() {
+  if (opponentWindow && !opponentWindow.closed) opponentWindow.close();
   showScreen('guess');
 }
 
@@ -198,32 +193,41 @@ document.getElementById('btn-guess-human').addEventListener('click', () => submi
 document.getElementById('btn-guess-ai').addEventListener('click', () => submitGuess('ai'));
 
 function cleanupConnection() {
-  if (matchRoom) {
-    matchRoom.leave();
-    matchRoom = null;
-  }
   if (lobby) {
     lobby.leave();
     lobby = null;
   }
-  activeChat = null;
 }
 
 // ---------------------------------------------------------------------
 // Entry point
 // ---------------------------------------------------------------------
-function startMatchmaking() {
+function startMatchmaking(popup) {
   beginMatchmakingUI();
-  // TODO(AI mode): once the Claude Artifact integration is built, decide
-  // here whether to route to connectToHumanOpponent or an AI connector.
-  // Both must funnel into transitionOnceMinimumElapsed(() => enterChatPhase(...))
-  // so the player can't tell which one they got from timing.
-  connectToHumanOpponent((result) => {
-    transitionOnceMinimumElapsed(() => enterChatPhase(result));
-  });
+  const isAI = Math.random() < 0.5;
+  if (isAI) {
+    transitionOnceMinimumElapsed(() => openOpponentWindow({ kind: 'ai' }, popup));
+  } else {
+    connectToHumanOpponent((roomId) => {
+      transitionOnceMinimumElapsed(() => openOpponentWindow({ kind: 'human', roomId }, popup));
+    });
+  }
 }
 
-document.getElementById('btn-find-match').addEventListener('click', startMatchmaking);
+document.getElementById('btn-find-match').addEventListener('click', () => {
+  // Open the popup synchronously, inside this click handler, so browsers
+  // don't treat it as an unsolicited popup once matchmaking's async delay
+  // has passed -- it's redirected to the real destination once known.
+  const popup = window.open('', '_blank', POPUP_FEATURES);
+  if (popup) {
+    popup.document.title = 'Connecting…';
+    popup.document.body.style.cssText =
+      'margin:0;height:100vh;display:flex;align-items:center;justify-content:center;' +
+      'background:#0b0b12;color:#9a9ab0;font-family:monospace;font-size:0.9rem;';
+    popup.document.body.textContent = 'Connecting…';
+  }
+  startMatchmaking(popup);
+});
 
 document.getElementById('btn-play-again').addEventListener('click', () => {
   showScreen('intro');

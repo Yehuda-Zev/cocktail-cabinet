@@ -69,7 +69,7 @@ so it stays a pure static site.
 | Asteroids | Pilot (rotate/thrust/wrap) | Asteroid Sender (click a target, spawns from a random edge) | **Implemented** |
 | Missile Command | Defender (click to fire interceptor, fixed cooldown) | Attacker (click to aim missile at the ground) | **Implemented** |
 | Tetris (our pick) | *open — design ourselves* | | Not started |
-| Imitation | Judge (chats, then guesses Human/AI) | opponent — human (**implemented**) or AI (open) | **Human vs Human implemented**; AI side open |
+| Imitation | Judge (chats, then guesses Human/AI) | opponent — human or AI | **Implemented** |
 
 ## Imitation: human-vs-human networking (resolved)
 
@@ -100,34 +100,60 @@ real browser tabs: lobby handshake, room handoff, bidirectional chat, and
 peer-disconnect handling (opponent leaving mid-chat surfaces a system
 message and disables input) all confirmed working.
 
-The chat UI, 90-second timer, and Human/AI guess-and-reveal screen are
-built and reused as-is for whichever opponent type is behind
-`startMatchmaking()` — the AI path just needs to plug into the same
-`enterChatPhase()` call once it exists, so the player can't tell which
-they got from timing or UI differences.
+## Imitation: the AI opponent (resolved)
+
+The AI side runs on a separately published Claude Artifact,
+**[Turing Booth](https://claude.ai/artifact/1yeHi97ec9a9HV3iRG79Sp)**,
+using the artifact runtime's `sample` capability ("ask Claude" — spends
+the *viewer's* own Claude usage, no API key involved). This is the only
+way to satisfy "no API keys, AI runs through Claude in your own browser":
+`window.claude` and its capabilities only exist on a page rendered
+through claude.ai's own artifact viewer — there is no way to call
+`sample` from a page hosted on this site.
+
+That constraint settled the two open questions from the original plan:
+
+- **Iframe embedding is impossible, confirmed by testing.** claude.ai
+  sends `Content-Security-Policy: frame-ancestors 'self' chrome-extension://...`
+  — it refuses to be framed by any external origin. This is Anthropic's
+  own platform policy, not something the artifact's settings or our
+  code can change.
+- **The artifact must be shared as "Anyone with the link."** Even then,
+  a visitor still needs their own claude.ai account signed in to actually
+  use `sample` (it spends their usage) — viewing the page doesn't require
+  sign-in, but asking Claude does. Confirmed live: an anonymous viewer
+  sees the page and UI render correctly, with a clean "Claude access is
+  unavailable in this view" fallback instead of a crash.
+
+**Design, given link-out is the only option:** both outcomes — human or
+AI — open in a new, deliberately bare popup window (no cabinet header,
+nav, or HUD) after the identical matchmaking delay, so the *transition*
+itself gives nothing away. `games/imitation/imitation.js` opens the popup
+synchronously inside the "Find a Match" click (avoids popup-blocker
+issues — see below) and only decides *where* to redirect it once
+matchmaking resolves: a human match redirects to `chat.html?room=<id>`
+(a bare page on this site, `games/imitation/chat.js`, that joins the
+already-agreed Trystero room directly); an AI match redirects to the
+Turing Booth URL. The main window keeps the timer and the Human/AI
+guess-and-reveal screen for both cases, so that part of the flow is
+byte-for-byte identical regardless of opponent type. What's left
+undisguisable: the claude.ai URL and its own header chrome once the
+popup lands there — there's no way around a real claude.ai page looking
+like claude.ai, given the platform won't let it be framed. Documented
+here as an accepted limitation, not something further engineering fixes.
+
+**Popup-blocker note:** `window.open()` must be called synchronously
+inside the click handler to count as a real user gesture in most
+browsers — calling it after matchmaking's async delay gets silently
+blocked. The page opens a blank popup immediately on click and redirects
+it (`popup.location.href = ...`) once the destination is known; if the
+popup was blocked anyway (confirmed happening in this dev sandbox), a
+manual link appears on the main page as a fallback — a real anchor click
+is its own fresh user gesture and isn't blocked.
 
 ## Open decisions (architect sign-off needed)
 
-1. **Imitation's AI mode.** Per your professor's note, the plan is to
-   publish the AI conversant as a separate **Claude Artifact** using the
-   artifact runtime's built-in "ask Claude" capability — this runs through
-   the viewer's own claude.ai session, so it satisfies "no API keys, AI runs
-   through Claude in your own browser" without us doing anything clever. Two
-   integration approaches, need a decision:
-   - **Link out**: the Netlify page opens the artifact's `claude.ai/artifact/...`
-     URL in a new tab. Simple, always works, but opening a new tab to
-     claude.ai the moment you're matched with the AI is a dead giveaway —
-     likely fails the "not obvious" requirement on its own.
-   - **Iframe embed**: the Netlify page embeds the artifact inline,
-     styled to match the human-chat UI exactly. This is the one that
-     actually satisfies "not obvious" — but whether claude.ai's
-     frame-ancestors policy allows being iframed by another origin is
-     still untested.
-   Recommendation: build the artifact first, test whether it can be
-   iframed, fall back to a disguised link-out (e.g. always opening
-   *something* in a new tab, human or AI, so the tab itself isn't a tell)
-   if not.
-2. **Tetris's flip** — still ours to design (assignment's "your own game"
+1. **Tetris's flip** — still ours to design (assignment's "your own game"
    slot), not locked in. Missile Command's flip is now resolved: Defender
    (fires interceptors that detonate into an expanding blast on arrival)
    vs. Attacker (aims missiles at the ground, five cities to defend).

@@ -4,8 +4,9 @@
     {
       "name": "cabinet-static",
       "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "http.server", "8734"],
-      "port": 8734
+      "runtimeArgs": ["-c", "import os,http.server,socketserver as s; port=int(os.environ.get('PORT','8000')); s.TCPServer.allow_reuse_address=True; srv=s.TCPServer(('',port),http.server.SimpleHTTPRequestHandler); print('serving on',port); srv.serve_forever()"],
+      "port": 8000,
+      "autoPort": true
     }
   ]
 }

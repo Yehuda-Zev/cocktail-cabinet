@@ -18,14 +18,12 @@
   <div class="imitation-frame">
 
     <section id="screen-intro" class="imitation-screen">
-      <p>You'll be paired with an opponent in another browser — chat for up to 90 seconds, then
-      guess whether you were talking to a <strong>human</strong> or the <strong>AI</strong>.
-      Matchmaking never connects instantly, on purpose.</p>
+      <p>You'll be paired with an opponent — a human in another browser, or the AI — and your
+      chat opens in a new window. Talk for up to 90 seconds, then come back here and guess which
+      one you got. Matchmaking never connects instantly, on purpose.</p>
       <button class="game-btn" id="btn-find-match">Find a Match</button>
-      <p class="game-note" id="human-mode-note">
-        Right now this only pairs you with another human in a second browser tab — open this
-        page in two tabs (or ask a friend) and click "Find a Match" in both. The AI opponent
-        mode is still being built.
+      <p class="game-note">
+        If your browser blocks the popup, a link to open it manually will appear here.
       </p>
     </section>
 
@@ -34,16 +32,11 @@
       <div class="imitation-spinner" aria-hidden="true"></div>
     </section>
 
-    <section id="screen-chat" class="imitation-screen imitation-screen--wide" hidden>
-      <div class="imitation-chat-header">
-        <span>Time left: <strong id="chat-timer">90</strong>s</span>
-        <button class="game-btn" id="btn-ready-guess">I'm Ready to Guess</button>
-      </div>
-      <div class="imitation-log" id="chat-log"></div>
-      <form class="imitation-input-row" id="chat-form">
-        <input type="text" id="chat-input" placeholder="Type a message…" autocomplete="off" maxlength="300" />
-        <button class="game-btn" type="submit">Send</button>
-      </form>
+    <section id="screen-chat" class="imitation-screen" hidden>
+      <p>Your chat opened in a new window. Talk there, then come back here when you're ready.</p>
+      <p class="imitation-status">Time left: <strong id="chat-timer">90</strong>s</p>
+      <button class="game-btn" id="btn-ready-guess">I'm Ready to Guess</button>
+      <p class="game-note" id="popup-fallback" hidden></p>
     </section>
 
     <section id="screen-guess" class="imitation-screen" hidden>
