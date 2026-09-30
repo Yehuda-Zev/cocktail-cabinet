@@ -10,18 +10,21 @@ index.html              the cabinet hub — links to all seven games
 shared/
   css/cabinet.css        hub page styling
   css/game.css            shared per-game chrome (header, role picker, HUD)
-  js/engine.js            fixed-timestep game loop
+  js/engine.js            fixed-timestep game loop (canvas-based games)
   js/agent.js              Role/Agent/DifficultyCurve framework (see ARCHITECTURE.md)
-  js/matchmaking.js         fake-queue delay, used by Imitation
+  js/matchmaking.js         fake-queue delay helper
 games/
-  snake/                  fully implemented — read this first, it's the reference
-  breakout/ splat/ asteroids/ missile-command/ imitation/ tetris/
-    scaffolded stub pages, not yet built
+  snake/                  the reference implementation — read this first
+  breakout/ splat/ asteroids/ missile-command/ minesweeper/
+    each a full implementation, same Role/Agent pattern
+  imitation/               human-vs-human (Trystero) + human-vs-AI (Claude Artifact)
 ```
 
-Read [`ARCHITECTURE.md`](ARCHITECTURE.md) before building the next game —
-it explains the Role/Agent pattern Snake demonstrates and lists the open
-decisions that still need a human call.
+Read [`ARCHITECTURE.md`](ARCHITECTURE.md) for how the Role/Agent pattern
+works and the per-game design notes — worth reading before touching any
+game's code, especially Imitation's and Minesweeper's (both depart from
+the canvas/GameLoop pattern the other five use, for good reasons explained
+there).
 
 ## Local development
 
@@ -42,15 +45,8 @@ up for Claude Code's browser preview if you're using that.
 
 ## Deploying (Netlify + your own domain)
 
-1. **Push this to GitHub.** From this folder:
-   ```bash
-   git init
-   git add .
-   git commit -m "Initial cocktail cabinet scaffold"
-   git branch -M main
-   git remote add origin <your-empty-github-repo-url>
-   git push -u origin main
-   ```
+1. **Push this to GitHub** (already done — this repo is connected to
+   `origin`; just `git push`).
 2. **Connect Netlify to the repo.** New site from Git → pick the repo.
    Build command: none. Publish directory: `.` (repo root) — already set
    in `netlify.toml`.
@@ -64,14 +60,36 @@ up for Claude Code's browser preview if you're using that.
 5. Submit the final `https://games.yourdomain.com`-style URL on Canvas —
    not a `netlify.app` address.
 
+**Status:** not yet connected to Netlify — this is the main remaining
+non-game task.
+
 ## What's done vs. what's left
 
-- **Snake** — fully playable, both directions, computer opponent verified
-  end-to-end (see `DELEGATION_LOG.md` for how it was tested).
-- **Breakout, Splat, Asteroids, Missile Command, Tetris, Imitation** —
-  stubbed with their planned flip design, not yet implemented.
-- **Imitation's AI mode** needs a decision + a build: see the "Open
-  decisions" section of `ARCHITECTURE.md`.
+All seven games are implemented and computer-vs-computer verified live
+in-browser: **Snake, Breakout, Splat, Asteroids, Missile Command,
+Minesweeper, Imitation**. See `ARCHITECTURE.md` for each game's design
+and `DELEGATION_LOG.md` for exactly how each was tested.
+
+**Verification gaps worth a real playtest before calling this finished**
+(each flagged in detail in `DELEGATION_LOG.md` as it came up — this is a
+summary, not the full picture):
+- Held-key controls (Breakout's paddles, Asteroids' rotate/thrust) —
+  correct at the event level, never confirmed by an actual held-key
+  session, since the automated test tool can't simulate holding a key.
+- Splat's human click-to-place layout, and watching an actual scored pass
+  or splat happen (the sandbox's slow real-time rendering made this
+  impractical to wait out).
+- Missile Command's actual "Overrun" loss state, and both human click
+  controls.
+- Imitation's AI mode: the persona itself is confirmed working (tested
+  live by a human), and the new-tab flow was fixed after a real-browser
+  bug report, but hasn't been re-confirmed end-to-end in a real browser
+  since that fix.
+
+**Non-game assignment requirements, not yet done:**
+- Netlify deployment + custom domain (domain is owned, Netlify site not
+  yet connected)
+- Slack posts about challenges hit, and replies to classmates' posts
 
 ## Delegation log
 

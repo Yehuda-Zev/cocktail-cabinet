@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Minesweeper — The Cocktail Cabinet</title>
+<link rel="stylesheet" href="../../shared/css/game.css" />
+<link rel="stylesheet" href="minesweeper.css" />
+</head>
+<body class="game-page">
+
+  <div class="game-header">
+    <a class="back-link" href="../../">&larr; Cabinet</a>
+    <h1>Minesweeper</h1>
+    <span style="width:4.5rem"></span>
+  </div>
+
+  <div id="role-assignment"></div>
+
+  <div class="game-hud">
+    <span>Level: <strong id="hud-level">1</strong></span>
+    <span>Mines: <strong id="hud-mines">10</strong></span>
+    <span>Safe left: <strong id="hud-safe">71</strong></span>
+    <span>Status: <strong id="hud-status">Ready</strong></span>
+  </div>
+
+  <div id="ms-board" class="ms-board"></div>
+
+  <div id="ms-placer-controls" class="ms-placer-controls" hidden>
+    <span>Mines placed: <strong id="placer-count">0</strong> / <strong id="placer-total">10</strong></span>
+    <button class="game-btn" id="btn-confirm-mines" disabled>Confirm Mines</button>
+  </div>
+
+  <div class="game-controls">
+    <button class="game-btn" id="btn-start">Start</button>
+    <button class="game-btn" id="btn-restart">Restart</button>
+  </div>
+
+  <p class="game-note">
+    Sweeper: click a cell to reveal it — numbers show how many of the 8 neighbors are mines.
+    Layout: click cells to place mines (the cell the sweeper opened with, and its neighbors, are
+    always off limits). Each level clears with more mines than the last. Hit a mine and it's over.
+  </p>
+
+  <script type="module" src="minesweeper.js"></script>
+</body>
+</html>

@@ -68,8 +68,64 @@ so it stays a pure static site.
 | Splat | Column Layout (click to set gap, locks at a line) | Runner (flap/gravity, reacts only to locked columns) | **Implemented** |
 | Asteroids | Pilot (rotate/thrust/wrap) | Asteroid Sender (click a target, spawns from a random edge) | **Implemented** |
 | Missile Command | Defender (click to fire interceptor, fixed cooldown) | Attacker (click to aim missile at the ground) | **Implemented** |
-| Tetris (our pick) | *open — design ourselves* | | Not started |
+| Minesweeper (our pick) | Mine Layout (places mines, avoiding the sweeper's opening cell) | Sweeper (clicks to reveal, deduces from numbers) | **Implemented** |
 | Imitation | Judge (chats, then guesses Human/AI) | opponent — human or AI | **Implemented** |
+
+## Minesweeper: our pick (resolved)
+
+Swapped in for Tetris after starting the project — Minesweeper's own
+mechanic (someone lays mines, someone else has to survive them) already
+*is* the flip the assignment asks for, with no invented asymmetry needed.
+
+**Fairness, adapted from classic Minesweeper:** the sweeper always opens
+first, on a completely empty board (no mines exist yet); only *then* does
+the layout role place mines, excluded from the opening cell and its 8
+neighbors. This is what guarantees the first click is never a death —
+standard practice in modern Minesweeper implementations — and here it
+also gives an adversarial human layout real information to react to
+("they opened top-left, I'll cluster mines bottom-right") without ever
+letting them peek at a *future* click.
+
+**Turn-based, not continuous — a deliberate architectural departure.**
+Every other game in this project ticks through `shared/js/engine.js`'s
+fixed-timestep `GameLoop`. Minesweeper has no physics to animate between
+clicks, so `games/minesweeper/minesweeper.js` skips it entirely and
+renders a plain DOM grid instead of canvas — better suited to numbers,
+click targets, and hover states anyway. It still reuses
+`Role`/`HumanAgent`/`ComputerAgent`/`DifficultyCurve`/
+`createRoleAssignmentControl` from `shared/js/agent.js` — agents are just
+asked for a move at specific moments (an opening click, a placement
+decision, a sweep move) instead of every animation frame. Difficulty is
+keyed to **level number** (boards cleared) rather than elapsed seconds,
+since thinking time shouldn't count against a turn-based player —
+`agent.tick(1)` is called once per level-up instead of once per frame,
+which `DifficultyCurve` handles correctly since its math doesn't care
+what unit its input represents.
+
+**Computer sweeper** runs real constraint propagation first (if a
+revealed number's flagged-neighbor count already matches it, every other
+unrevealed neighbor is safe; if the count needed equals the number of
+remaining unrevealed neighbors, they're all mines) — genuinely solved
+information, applied regardless of difficulty. Only when no certain move
+remains does difficulty matter: below it, a uniform-random guess among
+all remaining cells; above it, a guess weighted toward the frontier cell
+with the lowest locally-estimated mine probability. It never reads
+`isMine` on an unrevealed cell — the state object it receives doesn't
+carry that field at all, so there's no cheating path to accidentally
+leave open.
+
+**Computer layout** places mines with a difficulty-scaled clustering bias
+(weighted toward cells already adjacent to a placed mine, which produces
+harder-to-deduce patterns) rather than uniform-random, so a higher level
+is a genuinely tougher board, not just a denser one.
+
+**Verified:** live in-browser, computer-vs-computer (correct flood-fill,
+correct adjacency numbers, a legitimate early loss at level 1's low
+difficulty from an intentionally-random guess, confirming the computer
+isn't cheating toward guaranteed wins) and human-layout-vs-computer-sweeper
+(placed all 10 mines in a single deliberately adversarial row via the
+placement UI, watched the solver fully clear the board through pure
+deduction, then confirmed level 2 correctly starts at 14 mines).
 
 ## Imitation: human-vs-human networking (resolved)
 
@@ -158,12 +214,12 @@ new tab, not just sized popups), a manual link appears on the main page
 as a fallback — a real anchor click is its own fresh user gesture and
 isn't blocked.
 
-## Open decisions (architect sign-off needed)
+## Open decisions
 
-1. **Tetris's flip** — still ours to design (assignment's "your own game"
-   slot), not locked in. Missile Command's flip is now resolved: Defender
-   (fires interceptors that detonate into an expanding blast on arrival)
-   vs. Attacker (aims missiles at the ground, five cities to defend).
+None outstanding — all seven games are implemented. Remaining work is
+playtesting/polish tracked in `DELEGATION_LOG.md`, plus the non-game
+assignment requirements (Netlify + domain, Slack posts) tracked in
+`README.md`.
 
 ## Delegation
 

@@ -5,6 +5,62 @@ and how we verified it. Kept as we go, not written after the fact.
 
 ---
 
+### 2026-09-30 — Minesweeper (replacing Tetris)
+
+**Asked:** Swap the "your own game" slot from Tetris to Minesweeper — the
+user's call, since Minesweeper's own mechanic (lay mines / survive them)
+already is the flip the assignment wants, no invented asymmetry needed.
+
+**Produced:** `games/minesweeper/` (`index.html`, `minesweeper.js`,
+`minesweeper.css`), removed `games/tetris/`. Layout role places mines
+after the sweeper's opening click (excluding that cell and its neighbors,
+guaranteeing a safe start); Sweeper clicks to reveal, using number clues
+to deduce safe cells. A computer sweeper runs real constraint propagation
+first, falling back to a guess (random at low difficulty, weighted toward
+the statistically safer frontier cell at high difficulty) only when no
+certain move remains — and never reads `isMine` on an unrevealed cell, so
+there's no path for it to cheat even by accident. A computer layout
+clusters mines near already-placed ones as difficulty rises, which
+produces genuinely harder-to-deduce boards rather than just more of them.
+Difficulty is keyed to level number (boards cleared), not elapsed time —
+turn-based play shouldn't punish a slow thinker — reusing
+`DifficultyCurve` by feeding it level count instead of seconds, since its
+math doesn't care what the input represents. This game also departs from
+every other one in the project by skipping `shared/js/engine.js`'s
+GameLoop and rendering a plain DOM grid instead of canvas: there's no
+continuous physics to animate between clicks, and DOM buttons are a much
+better fit for numbers, click targets, and hover states than hand-drawn
+canvas text. Full design writeup in `ARCHITECTURE.md`.
+
+**Bug found and fixed during testing:** the mine-placement counter/confirm
+UI rendered visible before the first "Start" click, when it should have
+been hidden. Same root cause as the Imitation multi-screen bug from
+earlier in this project: `.ms-placer-controls { display: flex }` (an
+author class rule) silently overrides the browser's default
+`[hidden] { display: none }`. Fixed with an explicit
+`.ms-placer-controls[hidden] { display: none }` rule — this is the second
+time this exact CSS gotcha has shown up in this project; worth
+remembering for any future `hidden`-attribute toggling here.
+
+**Verified:** local server, live browser, multiple full rounds. Computer
+vs. computer: correct flood-fill on the opening click, correct adjacency
+numbers, and a legitimate early loss at level 1 (low difficulty means
+careless guessing once no certain move remains) — confirms the computer
+isn't scripted to always win. Human layout vs. computer sweeper: placed
+all 10 mines in a single deliberately adversarial row via the placement
+UI (counter and Confirm-button enable state both correct), watched the
+solver fully clear the board through pure deduction with zero guessing
+needed, and confirmed level 2 correctly started at 14 mines (10 + 4).
+Also directly confirmed the loss-state rendering: hit mine highlighted in
+yellow, distinct from the other revealed-but-unclicked mines in pink,
+game correctly stopped. Did not verify the human sweeper's click-to-reveal
+path beyond the one manual test that (legitimately, per low difficulty
+elsewhere) hit a mine, nor a full multi-level run past level 2 —
+reasonable next playtest if you want more confidence at higher mine
+densities.
+
+---
+
 ### 2026-09-30 — Imitation: popup → plain new tab
 
 **Asked:** The user reported Imitation broken in real use and asked why a
