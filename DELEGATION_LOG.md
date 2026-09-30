@@ -5,6 +5,43 @@ and how we verified it. Kept as we go, not written after the fact.
 
 ---
 
+### 2026-09-30 — Netlify + custom domain deployment
+
+**Asked:** Walk through connecting `decor8.online` (registered at
+GoDaddy) to the Netlify project this repo was already connected to.
+
+**Produced:** No code changes — this was live troubleshooting in the
+user's actual Netlify/GoDaddy accounts (which Claude has no access to;
+the user drove every click and shared screenshots). Two real issues
+surfaced and got fixed:
+- Netlify's default **Project visibility** setting blocked anonymous
+  visitors, redirecting them to a Netlify login page instead of serving
+  the site — unrelated to DNS, easy to mistake for a DNS problem since
+  the domain itself still "resolved." Fixed via Project configuration →
+  General → Visitor access → set to Public.
+- GoDaddy had already auto-created a `www` CNAME pointing at the apex
+  domain (its default for a freshly registered domain); Netlify needed
+  that CNAME to instead point at the project's `*.netlify.app` address,
+  and GoDaddy rejected adding a second record for the same name —
+  had to edit the existing one instead of adding new.
+A third apparent issue (site still showing old content after both fixes)
+turned out to be the user's own Chrome DNS cache, confirmed by checking
+from an uncached context (this session's own browser tool, then the
+user's own incognito window) — not a real remaining problem.
+
+**Verified:** Checked `https://decor8.online` directly from this
+session's browser tool (a context with no prior cache) and confirmed it
+served the real site correctly. The user separately confirmed the same
+in their regular browser after flushing Chrome's DNS cache.
+
+**Also noted for future sessions:** corrected on Netlify's current UI
+terminology mid-task (now organizes around "teams" and "projects," not
+"sites") — from now on, check current docs for any external tool/service
+before advising, rather than relying on remembered specifics. Saved as a
+standing memory.
+
+---
+
 ### 2026-09-30 — Minesweeper (replacing Tetris)
 
 **Asked:** Swap the "your own game" slot from Tetris to Minesweeper — the

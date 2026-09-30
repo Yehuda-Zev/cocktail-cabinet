@@ -45,23 +45,21 @@ up for Claude Code's browser preview if you're using that.
 
 ## Deploying (Netlify + your own domain)
 
-1. **Push this to GitHub** (already done — this repo is connected to
-   `origin`; just `git push`).
-2. **Connect Netlify to the repo.** New site from Git → pick the repo.
-   Build command: none. Publish directory: `.` (repo root) — already set
-   in `netlify.toml`.
-3. **Continuous deployment** is automatic once connected: every push to
-   `main` redeploys.
-4. **Point your domain at it.** In Netlify: Domain settings → Add custom
-   domain → enter your domain (or a subdomain like `games.yourdomain.com`).
-   Netlify gives you either a CNAME record (for a subdomain) or nameservers
-   (if you want Netlify DNS) — add that at your registrar. Wait for DNS to
-   propagate, Netlify auto-provisions HTTPS once it does.
-5. Submit the final `https://games.yourdomain.com`-style URL on Canvas —
-   not a `netlify.app` address.
+**Status: live at [decor8.online](https://decor8.online)**, deployed via
+Netlify with continuous deployment from `github.com/Yehuda-Zev/cocktail-cabinet`
+(`main` branch) — every push redeploys automatically.
 
-**Status:** not yet connected to Netlify — this is the main remaining
-non-game task.
+Two non-obvious things that came up getting there, in case this ever
+needs redoing (e.g. a different domain, a fresh Netlify project):
+
+- **Netlify's "Project visibility" defaults to restricted** (Project
+  configuration → General → Visitor access) — set it to **Public**, or
+  anonymous visitors get bounced to a Netlify login page instead of the
+  site. Easy to miss since the domain itself resolves fine either way.
+- **GoDaddy auto-creates a `www` CNAME** pointing at the apex domain when
+  you register — if Netlify asks for a `www` CNAME pointing at your
+  `*.netlify.app` subdomain, you'll likely need to *edit* that existing
+  record rather than add a new one (GoDaddy rejects a duplicate name).
 
 ## What's done vs. what's left
 
@@ -86,10 +84,10 @@ summary, not the full picture):
   bug report, but hasn't been re-confirmed end-to-end in a real browser
   since that fix.
 
-**Non-game assignment requirements, not yet done:**
-- Netlify deployment + custom domain (domain is owned, Netlify site not
-  yet connected)
-- Slack posts about challenges hit, and replies to classmates' posts
+**Non-game assignment requirements:**
+- ✅ Netlify deployment + custom domain — live at [decor8.online](https://decor8.online)
+- Slack posts about challenges hit, and replies to classmates' posts — not
+  yet done
 
 ## Delegation log
 
