@@ -4,11 +4,13 @@
 // no API key only exists on a page viewed through claude.ai's own
 // artifact viewer; there is no way to call it from a page on this site).
 //
-// Both outcomes open in a new, deliberately bare popup window (no cabinet
-// chrome) after the same matchmaking delay, so the transition itself
-// gives nothing away. The chat happens entirely in that popup; this page
-// keeps the timer and runs the Human/AI guess + reveal once the player
-// comes back, so that part of the experience is identical either way.
+// Both outcomes open in a new, deliberately bare tab (no cabinet chrome,
+// no site header/nav -- and the Turing Booth artifact's own markup is
+// kept structurally identical to chat.html's, log + input and nothing
+// else) after the same matchmaking delay, so the transition itself gives
+// nothing away. The chat happens entirely in that tab; this page keeps
+// the timer and runs the Human/AI guess + reveal once the player comes
+// back, so that part of the experience is identical either way.
 // Full writeup of why full disguise isn't possible: ARCHITECTURE.md.
 
 import { joinRoom, selfId } from 'https://cdn.jsdelivr.net/npm/@trystero-p2p/nostr/+esm';
@@ -16,7 +18,9 @@ import { joinRoom, selfId } from 'https://cdn.jsdelivr.net/npm/@trystero-p2p/nos
 const APP_ID = 'cocktail-cabinet-imitation-v1';
 const LOBBY_ROOM_ID = 'lobby';
 const AI_ARTIFACT_URL = 'https://claude.ai/artifact/1yeHi97ec9a9HV3iRG79Sp';
-const POPUP_FEATURES = 'width=420,height=640,noopener';
+// A plain new tab, not a sized popup window -- popups are the ones real
+// browsers are most aggressive about blocking, even from a genuine click.
+const TAB_FEATURES = 'noopener';
 const CHAT_SECONDS = 90;
 const MIN_MATCHMAKING_MS = 3000;
 const STATUS_MESSAGES = [
@@ -111,21 +115,21 @@ function connectToHumanOpponent(onPaired) {
 }
 
 // ---------------------------------------------------------------------
-// Opening the opponent's chat window
+// Opening the opponent's chat tab
 // ---------------------------------------------------------------------
 let opponentType = null;
-let opponentWindow = null;
+let opponentTab = null;
 
-function openOpponentWindow(info, popup) {
+function openOpponentTab(info, tab) {
   opponentType = info.kind;
-  opponentWindow = popup;
+  opponentTab = tab;
   const url = info.kind === 'ai'
     ? AI_ARTIFACT_URL
     : `chat.html?room=${encodeURIComponent(info.roomId)}`;
 
   const fallbackEl = document.getElementById('popup-fallback');
-  if (popup && !popup.closed) {
-    popup.location.href = url;
+  if (tab && !tab.closed) {
+    tab.location.href = url;
     fallbackEl.hidden = true;
   } else {
     fallbackEl.hidden = false;
@@ -134,7 +138,7 @@ function openOpponentWindow(info, popup) {
     link.href = url;
     link.target = '_blank';
     link.rel = 'noopener';
-    link.textContent = 'Your browser blocked the popup — click here to open your chat';
+    link.textContent = 'Your browser blocked the new tab — click here to open your chat';
     link.style.color = '#2de2ff';
     fallbackEl.appendChild(link);
   }
@@ -175,7 +179,7 @@ btnReadyGuess.addEventListener('click', () => {
 const resultTextEl = document.getElementById('result-text');
 
 function goToGuessPhase() {
-  if (opponentWindow && !opponentWindow.closed) opponentWindow.close();
+  if (opponentTab && !opponentTab.closed) opponentTab.close();
   showScreen('guess');
 }
 
@@ -202,31 +206,31 @@ function cleanupConnection() {
 // ---------------------------------------------------------------------
 // Entry point
 // ---------------------------------------------------------------------
-function startMatchmaking(popup) {
+function startMatchmaking(tab) {
   beginMatchmakingUI();
   const isAI = Math.random() < 0.5;
   if (isAI) {
-    transitionOnceMinimumElapsed(() => openOpponentWindow({ kind: 'ai' }, popup));
+    transitionOnceMinimumElapsed(() => openOpponentTab({ kind: 'ai' }, tab));
   } else {
     connectToHumanOpponent((roomId) => {
-      transitionOnceMinimumElapsed(() => openOpponentWindow({ kind: 'human', roomId }, popup));
+      transitionOnceMinimumElapsed(() => openOpponentTab({ kind: 'human', roomId }, tab));
     });
   }
 }
 
 document.getElementById('btn-find-match').addEventListener('click', () => {
-  // Open the popup synchronously, inside this click handler, so browsers
+  // Open the tab synchronously, inside this click handler, so browsers
   // don't treat it as an unsolicited popup once matchmaking's async delay
   // has passed -- it's redirected to the real destination once known.
-  const popup = window.open('', '_blank', POPUP_FEATURES);
-  if (popup) {
-    popup.document.title = 'Connecting…';
-    popup.document.body.style.cssText =
+  const tab = window.open('', '_blank', TAB_FEATURES);
+  if (tab) {
+    tab.document.title = 'Connecting…';
+    tab.document.body.style.cssText =
       'margin:0;height:100vh;display:flex;align-items:center;justify-content:center;' +
       'background:#0b0b12;color:#9a9ab0;font-family:monospace;font-size:0.9rem;';
-    popup.document.body.textContent = 'Connecting…';
+    tab.document.body.textContent = 'Connecting…';
   }
-  startMatchmaking(popup);
+  startMatchmaking(tab);
 });
 
 document.getElementById('btn-play-again').addEventListener('click', () => {

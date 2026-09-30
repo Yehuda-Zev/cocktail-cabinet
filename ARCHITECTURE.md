@@ -126,30 +126,37 @@ That constraint settled the two open questions from the original plan:
   unavailable in this view" fallback instead of a crash.
 
 **Design, given link-out is the only option:** both outcomes — human or
-AI — open in a new, deliberately bare popup window (no cabinet header,
-nav, or HUD) after the identical matchmaking delay, so the *transition*
-itself gives nothing away. `games/imitation/imitation.js` opens the popup
-synchronously inside the "Find a Match" click (avoids popup-blocker
-issues — see below) and only decides *where* to redirect it once
-matchmaking resolves: a human match redirects to `chat.html?room=<id>`
-(a bare page on this site, `games/imitation/chat.js`, that joins the
-already-agreed Trystero room directly); an AI match redirects to the
-Turing Booth URL. The main window keeps the timer and the Human/AI
-guess-and-reveal screen for both cases, so that part of the flow is
-byte-for-byte identical regardless of opponent type. What's left
-undisguisable: the claude.ai URL and its own header chrome once the
-popup lands there — there's no way around a real claude.ai page looking
-like claude.ai, given the platform won't let it be framed. Documented
-here as an accepted limitation, not something further engineering fixes.
+AI — open in a new, deliberately bare tab (no cabinet header, nav, or
+HUD; a plain `window.open(url, '_blank', 'noopener')` with no
+width/height, not a sized popup window — real browsers are more
+aggressive about blocking an actual popup than a bare new tab, even from
+a genuine click) after the identical matchmaking delay, so the
+*transition* itself gives nothing away. `games/imitation/imitation.js`
+opens the tab synchronously inside the "Find a Match" click (avoids
+popup-blocker issues — see below) and only decides *where* to redirect it
+once matchmaking resolves: a human match redirects to
+`chat.html?room=<id>` (a bare page on this site,
+`games/imitation/chat.js`, that joins the already-agreed Trystero room
+directly); an AI match redirects to the Turing Booth URL, whose own page
+content is kept structurally identical to `chat.html` (same log + input
+form, no title, no extra copy) so the two destinations read as the same
+surface. The main window keeps the timer and the Human/AI guess-and-reveal
+screen for both cases, so that part of the flow is byte-for-byte identical
+regardless of opponent type. What's left undisguisable: the claude.ai URL
+and its own header chrome once the tab lands there — there's no way
+around a real claude.ai page looking like claude.ai, given the platform
+won't let it be framed. Documented here as an accepted limitation, not
+something further engineering fixes.
 
 **Popup-blocker note:** `window.open()` must be called synchronously
 inside the click handler to count as a real user gesture in most
 browsers — calling it after matchmaking's async delay gets silently
-blocked. The page opens a blank popup immediately on click and redirects
-it (`popup.location.href = ...`) once the destination is known; if the
-popup was blocked anyway (confirmed happening in this dev sandbox), a
-manual link appears on the main page as a fallback — a real anchor click
-is its own fresh user gesture and isn't blocked.
+blocked. The page opens a blank tab immediately on click and redirects
+it (`tab.location.href = ...`) once the destination is known; if it was
+blocked anyway (confirmed happening in this dev sandbox even for a plain
+new tab, not just sized popups), a manual link appears on the main page
+as a fallback — a real anchor click is its own fresh user gesture and
+isn't blocked.
 
 ## Open decisions (architect sign-off needed)
 

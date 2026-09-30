@@ -5,6 +5,32 @@ and how we verified it. Kept as we go, not written after the fact.
 
 ---
 
+### 2026-09-30 — Imitation: popup → plain new tab
+
+**Asked:** The user reported Imitation broken in real use and asked why a
+sized popup was used at all, plus to make the artifact tab visually
+identical to the human-chat tab.
+
+**Produced:** `games/imitation/imitation.js` now calls `window.open(url,
+'_blank', 'noopener')` with no width/height — a plain new tab, not a
+sized popup window (real browsers are more aggressive about blocking
+popups specifically, even from a genuine click, than a bare new tab).
+Republished Turing Booth (`https://claude.ai/artifact/1yeHi97ec9a9HV3iRG79Sp`,
+version 2) stripped down to the exact same DOM structure as
+`chat.html` — log + input form, no title, no extra copy — so the two
+possible destinations read as the same surface once past claude.ai's own
+unavoidable header chrome.
+
+**Verified:** Republished and screenshotted the artifact directly — same
+bare log/input layout as `chat.html`, correctly showing the "Claude
+access is unavailable" fallback in this unsigned-in sandbox. Re-ran
+Imitation's matchmaking in-browser after the rename; console clean,
+correctly reached the human-lobby wait state. Did not get a real signed-in
+browser to confirm the new tab opens cleanly end-to-end this round — that
+still needs the user's own playtest, same open item as before.
+
+---
+
 ### 2026-09-29 — Imitation, AI opponent
 
 **Asked:** Resolve the open iframe-vs-link-out question for Imitation's AI
