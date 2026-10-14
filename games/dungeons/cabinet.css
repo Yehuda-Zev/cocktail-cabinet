@@ -1,0 +1,50 @@
+/* Cabinet styling layered over Unity's generated TemplateData/style.css.
+   Kept in its own file so a Unity rebuild never overwrites it. */
+
+body {
+  background: #0b0b12;
+  color: #f2f2f8;
+  font-family: 'Courier New', monospace;
+}
+
+.cab-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 0.75rem 1rem;
+  background: rgba(11, 11, 18, 0.85);
+}
+
+.cab-bar a {
+  color: #2de2ff;
+  text-decoration: none;
+  font-size: 0.85rem;
+}
+
+.cab-bar h1 {
+  margin: 0;
+  font-size: 1.2rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #ffe94a;
+}
+
+/* Desktop: sit below the bar in normal flow instead of absolute-centered
+   over the whole page, so the canvas can't slide under the bar. */
+#unity-container.unity-desktop {
+  position: relative;
+  left: auto;
+  top: auto;
+  transform: none;
+  width: 960px;
+  margin: 4rem auto 1.5rem;
+}
+
+#unity-build-title {
+  color: #9a9ab0;
+}

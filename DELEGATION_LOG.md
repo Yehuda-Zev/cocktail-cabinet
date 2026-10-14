@@ -5,6 +5,33 @@ and how we verified it. Kept as we go, not written after the fact.
 
 ---
 
+### 2026-10-14 — Depths of Danger (Unity build, 8th game)
+
+**Asked:** Take the Unity 6.3 Web build the user put in `games/dungeons/`
+and make it a game page on the cabinet. (Earlier the same week: build
+walkthrough, and diagnosing a failed first build — Unity's "Internal build
+system error", cleared by the user on their own machine.)
+
+**Produced:** The build was complete (~32 MB, largest file 18 MB, well
+under GitHub's 100 MB limit) and used Decompression Fallback
+(`.unityweb` files), so no `Content-Encoding` headers or `netlify.toml`
+changes were needed. Added `games/dungeons/cabinet.css` (dark theme,
+canvas placed below a bar instead of absolute-centered) and edited Unity's
+generated `index.html`: new title, the stylesheet link, and a back-to-cabinet
+bar. A hub card (08, "Depths of Danger", "Small Unity game") and a subtitle that
+now says the *first seven* play both directions: the user confirmed this
+game is human-only, so it does not meet that requirement.
+
+**Verified:** Claude ran it from a local server: engine started (6000.3.14f1),
+main menu rendered, clicking Play entered a dungeon room with the player and
+HUD, and the hub card showed. Console showed hidden URP shaders reported as
+unsupported on this sandbox's GPU; the game rendered anyway. Not verified:
+real gameplay, controls, and performance on a real machine (user playtest).
+A Unity rebuild overwrites `index.html`; the three additions are marked in a
+comment there.
+
+---
+
 ### 2026-09-30 — Netlify + custom domain deployment
 
 **Asked:** Walk through connecting `decor8.online` (registered at
