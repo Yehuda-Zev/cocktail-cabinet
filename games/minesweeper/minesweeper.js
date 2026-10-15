@@ -12,11 +12,14 @@
 // to what unit its input represents, so this is a straight reuse, not a
 // fork.
 import { Role, HumanAgent, ComputerAgent, DifficultyCurve, createRoleAssignmentControl } from '../../shared/js/agent.js';
+import { sfx, installMuteToggle } from '../../shared/js/sfx.js';
+import { onCheatCode } from '../../shared/js/cheats.js';
 
 const GRID_SIZE = 9;
 const BASE_MINES = 10;
 const MINES_PER_LEVEL = 4;
 const MAX_MINES = 30;
+const HIGH_LEVEL = 6; // first level at the 30-mine cap
 const CELL_COUNT = GRID_SIZE * GRID_SIZE;
 
 function mineCountForLevel(level) {
@@ -151,6 +154,9 @@ function createPlacerHumanBinding() {
 // Game state
 // ---------------------------------------------------------------------
 let level = 1;
+// Bumped for every new board; the computer's delayed moves check it so a
+// timer from an abandoned board (Restart, level skip) can't act on a new one.
+let round = 0;
 let state = null;
 let agents = null;
 let running = false;
@@ -182,6 +188,9 @@ function buildAgents(assignment) {
       ? new HumanAgent(ROLES.sweeper, sweeperBinding)
       : new ComputerAgent(ROLES.sweeper, pickSweeperMove, new DifficultyCurve({ min: 0, max: 0.9, rampSeconds: 6 })),
   };
+  // Agents built mid-game start at the skill the current level calls for.
+  agents.placer.jumpClock(level - 1);
+  agents.sweeper.jumpClock(level - 1);
 }
 
 placerBinding = createPlacerHumanBinding();
@@ -274,6 +283,8 @@ function render() {
 // Round flow
 // ---------------------------------------------------------------------
 function startLevel() {
+  round++;
+  const thisRound = round;
   state = newBoardState();
   safeZone = new Set();
   phase = 'opening';
@@ -283,6 +294,7 @@ function startLevel() {
 
   if (agents.sweeper instanceof ComputerAgent) {
     setTimeout(() => {
+      if (round !== thisRound) return;
       const move = agents.sweeper.getInput(sweeperView());
       handleOpening(move.reveal);
     }, 500);
@@ -298,6 +310,7 @@ function onCellClick(i) {
   } else if (phase === 'placing' && agents.placer instanceof HumanAgent) {
     if (safeZone.has(i)) return;
     placerBinding.toggle(i);
+    sfx('place');
     updatePlacerControls();
     render();
   }
@@ -316,7 +329,9 @@ function handleOpening(i) {
     render();
   } else {
     hudStatus.textContent = 'Placing mines…';
+    const thisRound = round;
     setTimeout(() => {
+      if (round !== thisRound) return;
       const { mines } = agents.placer.getInput({ mineCount: state.mineCount, excluded: safeZone });
       finalizePlacement(mines, i);
     }, 500);
@@ -330,6 +345,7 @@ function updatePlacerControls() {
 }
 
 btnConfirmMines.addEventListener('click', () => {
+  sfx('blip');
   const { mines } = agents.placer.getInput();
   finalizePlacement(mines, [...safeZone][0]);
 });
@@ -364,9 +380,11 @@ function resolveSweep(i) {
   render();
 
   if (state.cells[i].isMine) {
+    sfx('crash');
     endGame(false);
     return;
   }
+  sfx('reveal');
   const revealedSafe = state.cells.filter((c) => c.revealed && !c.isMine).length;
   if (revealedSafe === CELL_COUNT - state.mineCount) {
     endGame(true);
@@ -374,8 +392,9 @@ function resolveSweep(i) {
   }
 
   if (agents.sweeper instanceof ComputerAgent) {
+    const thisRound = round;
     setTimeout(() => {
-      if (phase !== 'sweeping') return;
+      if (round !== thisRound || phase !== 'sweeping') return;
       const move = agents.sweeper.getInput(sweeperView());
       resolveSweep(move.reveal);
     }, 350);
@@ -390,8 +409,10 @@ function endGame(won) {
 
   if (won) {
     hudStatus.textContent = `Level ${level} clear!`;
+    sfx('win');
     level++;
-    setTimeout(() => { if (running) startLevel(); }, 1200);
+    const thisRound = round;
+    setTimeout(() => { if (running && round === thisRound) startLevel(); }, 1200);
   } else {
     running = false;
     hudStatus.textContent = `Game Over — reached level ${level}`;
@@ -400,6 +421,8 @@ function endGame(won) {
 
 function restartGame() {
   level = 1;
+  agents.placer.resetClock();
+  agents.sweeper.resetClock();
   running = true;
   startLevel();
 }
@@ -411,3 +434,16 @@ document.getElementById('btn-start').addEventListener('click', () => {
 });
 
 document.getElementById('btn-restart').addEventListener('click', restartGame);
+
+installMuteToggle();
+
+// Starts a fresh board at the 30-mine level, with computer skill to match.
+onCheatCode(() => {
+  level = Math.max(level, HIGH_LEVEL);
+  agents.placer.jumpClock(level - 1);
+  agents.sweeper.jumpClock(level - 1);
+  running = true;
+  startLevel();
+  hudStatus.textContent = `Level skip! Level ${level}`;
+  sfx('levelup');
+});

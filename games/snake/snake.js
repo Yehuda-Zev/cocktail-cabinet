@@ -1,5 +1,7 @@
 import { GameLoop, fitCanvasToContainer } from '../../shared/js/engine.js';
 import { Role, HumanAgent, ComputerAgent, DifficultyCurve, createRoleAssignmentControl } from '../../shared/js/agent.js';
+import { sfx, installMuteToggle } from '../../shared/js/sfx.js';
+import { onCheatCode } from '../../shared/js/cheats.js';
 
 // ---------------------------------------------------------------------
 // Grid setup
@@ -200,7 +202,12 @@ function placerStrategy(state, difficulty) {
 // ---------------------------------------------------------------------
 let state, agents, running = false, gameOverFlag = false;
 let moveAccumulator = 0;
+// Seconds of actual play this run: drives difficulty, resets on Restart,
+// and doesn't count time spent before Start or after Game Over.
+let runTime = 0;
+let noticeUntil = 0;
 const globalDifficulty = new DifficultyCurve({ min: 0, max: 1, rampSeconds: 90 });
+const HIGH_LEVEL_SECONDS = 270; // 3x the ramp: ~95% of max difficulty
 
 function speedForElapsed(elapsedSeconds) {
   const d = globalDifficulty.at(elapsedSeconds);
@@ -220,6 +227,9 @@ function resetState() {
   gameOverFlag = false;
   moveAccumulator = 0;
   lastPath = { dir: null, ticksSinceRecompute: 99 };
+  runTime = 0;
+  agents?.steerer.resetClock();
+  agents?.placer.resetClock();
 }
 
 function buildAgents(assignment) {
@@ -233,6 +243,8 @@ function buildAgents(assignment) {
   };
   agents.steerer.attach();
   agents.placer.attach();
+  agents.steerer.jumpClock(runTime);
+  agents.placer.jumpClock(runTime);
 }
 
 // ---------------------------------------------------------------------
@@ -268,6 +280,7 @@ function tickMovement() {
   if (!inBounds(next) || state.snake.some((s) => cellsEqual(s, next))) {
     gameOverFlag = true;
     hudStatus.textContent = 'Game Over';
+    sfx('lose');
     return;
   }
 
@@ -275,6 +288,7 @@ function tickMovement() {
   if (state.apple && cellsEqual(next, state.apple)) {
     state.score++;
     state.apple = null;
+    sfx('pickup');
   } else {
     state.snake.pop();
   }
@@ -283,23 +297,26 @@ function tickMovement() {
 function tickPlacement() {
   if (state.apple) return;
   const placed = agents.placer.getInput(state);
-  if (placed) state.apple = placed;
+  if (placed) {
+    state.apple = placed;
+    if (agents.placer instanceof HumanAgent) sfx('place');
+  }
 }
 
 const moveIntervalMsRef = { value: 220 };
 
 const loop = new GameLoop({
   canvas,
-  update(dt, elapsed) {
-    agents.steerer.tick?.(dt);
-    agents.placer.tick?.(dt);
-
+  update(dt) {
     if (!running || gameOverFlag) return;
+    runTime += dt;
+    agents.steerer.tick(dt);
+    agents.placer.tick(dt);
 
     tickPlacement();
     if (!state.apple) return; // waiting on placer
 
-    moveIntervalMsRef.value = speedForElapsed(elapsed);
+    moveIntervalMsRef.value = speedForElapsed(runTime);
     moveAccumulator += dt * 1000;
     if (moveAccumulator >= moveIntervalMsRef.value) {
       moveAccumulator = 0;
@@ -308,7 +325,10 @@ const loop = new GameLoop({
 
     hudScore.textContent = String(state.score);
     hudSpeed.textContent = Math.round(1000 / moveIntervalMsRef.value * 10) / 10 + '/s';
-    if (!gameOverFlag) hudStatus.textContent = state.apple ? 'Playing' : 'Waiting for apple…';
+    if (!gameOverFlag) {
+      hudStatus.textContent = performance.now() < noticeUntil ? 'Level skip!'
+        : state.apple ? 'Playing' : 'Waiting for apple…';
+    }
   },
   render(ctx2) {
     draw(ctx2);
@@ -363,4 +383,15 @@ document.getElementById('btn-restart').addEventListener('click', () => {
   resetState();
   running = true;
   hudStatus.textContent = 'Playing';
+});
+
+installMuteToggle();
+
+onCheatCode(() => {
+  runTime = Math.max(runTime, HIGH_LEVEL_SECONDS);
+  agents.steerer.jumpClock(HIGH_LEVEL_SECONDS);
+  agents.placer.jumpClock(HIGH_LEVEL_SECONDS);
+  noticeUntil = performance.now() + 1500;
+  hudStatus.textContent = 'Level skip!';
+  sfx('levelup');
 });

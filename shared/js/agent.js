@@ -42,6 +42,10 @@ export class Agent {
   detach() {}
   // Called every fixed tick if the agent needs its own clock (computer agents).
   tick(_dt) {}
+  // Difficulty clock controls: back to the start of a run, or forward to at
+  // least `seconds` (the level-skip cheat). No-ops for agents without a clock.
+  resetClock() {}
+  jumpClock(_seconds) {}
   // Must return a game-defined input object. Never throws in production
   // games -- base class throws only to catch missing implementations.
   getInput(_state) {
@@ -81,6 +85,12 @@ export class ComputerAgent extends Agent {
   }
   tick(dt) {
     this.elapsed += dt;
+  }
+  resetClock() {
+    this.elapsed = 0;
+  }
+  jumpClock(seconds) {
+    this.elapsed = Math.max(this.elapsed, seconds);
   }
   getInput(state) {
     return this.strategyFn(state, this.difficulty.at(this.elapsed));

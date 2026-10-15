@@ -1,5 +1,7 @@
 import { GameLoop, fitCanvasToContainer } from '../../shared/js/engine.js';
 import { Role, HumanAgent, ComputerAgent, DifficultyCurve, createRoleAssignmentControl } from '../../shared/js/agent.js';
+import { sfx, installMuteToggle } from '../../shared/js/sfx.js';
+import { onCheatCode } from '../../shared/js/cheats.js';
 
 // ---------------------------------------------------------------------
 // Field & constants
@@ -22,6 +24,7 @@ const ROLES = {
 };
 
 const globalDifficulty = new DifficultyCurve({ min: 0, max: 1, rampSeconds: 80 });
+const HIGH_LEVEL_SECONDS = 240; // 3x the ramp: ~95% of max difficulty
 function missileSpeedForElapsed(elapsed) {
   const d = globalDifficulty.at(elapsed);
   return 90 + (190 - 90) * d;
@@ -138,11 +141,18 @@ function resetState() {
     interceptors: [],
     explosions: [],
     score: 0,
-    elapsed: 0,
+    elapsed: 0, // seconds of actual play this run; times explosions and cooldowns
+    boost: 0, // extra seconds added to difficulty only (the level-skip cheat)
     nextMissileReadyAt: 0,
     nextFireReadyAt: 0,
   };
   gameOverFlag = false;
+  agents?.defender.resetClock();
+  agents?.attacker.resetClock();
+}
+
+function difficultyTime() {
+  return state.elapsed + state.boost;
 }
 
 function buildAgents(assignment) {
@@ -156,6 +166,8 @@ function buildAgents(assignment) {
   };
   agents.defender.attach();
   agents.attacker.attach();
+  agents.defender.jumpClock(state ? difficultyTime() : 0);
+  agents.attacker.jumpClock(state ? difficultyTime() : 0);
 }
 
 const roleControl = createRoleAssignmentControl({
@@ -182,10 +194,13 @@ function explosionRadius(explosion, elapsed) {
   return 0;
 }
 
-function stepPhysics(dt, elapsed) {
+function stepPhysics(dt) {
   if (gameOverFlag) return;
-  state.elapsed = elapsed;
-  const missileSpeed = missileSpeedForElapsed(elapsed);
+  state.elapsed += dt;
+  agents.defender.tick(dt);
+  agents.attacker.tick(dt);
+  const elapsed = state.elapsed;
+  const missileSpeed = missileSpeedForElapsed(difficultyTime());
 
   // Attacker
   const attackerAction = agents.attacker.getInput(state);
@@ -198,7 +213,8 @@ function stepPhysics(dt, elapsed) {
       vx: (dx / dist) * missileSpeed, vy: (dy / dist) * missileSpeed,
       targetX: attackerAction.targetX,
     });
-    state.nextMissileReadyAt = elapsed + missileCooldownForElapsed(elapsed) / 1000;
+    state.nextMissileReadyAt = elapsed + missileCooldownForElapsed(difficultyTime()) / 1000;
+    sfx('launch');
   }
 
   // Defender
@@ -212,6 +228,7 @@ function stepPhysics(dt, elapsed) {
       targetX: defenderAction.fireAt.x, targetY: defenderAction.fireAt.y,
     });
     state.nextFireReadyAt = elapsed + FIRE_COOLDOWN_MS / 1000;
+    sfx('shoot');
   }
 
   // Move missiles
@@ -231,6 +248,7 @@ function stepPhysics(dt, elapsed) {
   arrived.forEach((ic) => {
     state.interceptors.splice(state.interceptors.indexOf(ic), 1);
     state.explosions.push({ x: ic.targetX, y: ic.targetY, startElapsed: elapsed });
+    sfx('explode');
   });
 
   // Explosion vs missile
@@ -254,11 +272,17 @@ function stepPhysics(dt, elapsed) {
       const d = Math.abs(c.x - m.x);
       if (d < nearestDist) { nearestDist = d; nearest = c; }
     }
-    if (nearest && nearestDist <= CITY_WIDTH / 2) nearest.alive = false;
+    if (nearest && nearestDist <= CITY_WIDTH / 2) {
+      nearest.alive = false;
+      sfx('crash');
+    }
     return false;
   });
 
-  if (state.cities.every((c) => !c.alive)) gameOverFlag = true;
+  if (state.cities.every((c) => !c.alive)) {
+    gameOverFlag = true;
+    sfx('lose');
+  }
 }
 
 // ---------------------------------------------------------------------
@@ -270,17 +294,16 @@ const hudStatus = document.getElementById('hud-status');
 
 const loop = new GameLoop({
   canvas,
-  update(dt, elapsed) {
-    agents.defender.tick?.(dt);
-    agents.attacker.tick?.(dt);
+  update(dt) {
     if (!running) return;
 
-    stepPhysics(dt, elapsed);
+    stepPhysics(dt);
 
     hudScore.textContent = String(state.score);
     const aliveCount = state.cities.filter((c) => c.alive).length;
     hudCities.textContent = `${aliveCount}/${CITY_COUNT}`;
-    hudStatus.textContent = gameOverFlag ? 'Overrun!' : 'Playing';
+    hudStatus.textContent = gameOverFlag ? 'Overrun!'
+      : performance.now() < noticeUntil ? 'Level skip!' : 'Playing';
   },
   render(ctx) {
     draw(ctx);
@@ -361,4 +384,16 @@ document.getElementById('btn-restart').addEventListener('click', () => {
   resetState();
   running = true;
   hudStatus.textContent = 'Playing';
+});
+
+installMuteToggle();
+
+let noticeUntil = 0;
+onCheatCode(() => {
+  // Boost difficulty only; state.elapsed keeps timing explosions and cooldowns.
+  state.boost = Math.max(state.boost, HIGH_LEVEL_SECONDS - state.elapsed);
+  agents.defender.jumpClock(HIGH_LEVEL_SECONDS);
+  agents.attacker.jumpClock(HIGH_LEVEL_SECONDS);
+  noticeUntil = performance.now() + 1500;
+  sfx('levelup');
 });

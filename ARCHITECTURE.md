@@ -45,12 +45,30 @@ human or computer independently.
 Every game should tune its own `min`/`max`/`rampSeconds` — don't reuse
 Snake's numbers blindly, they were tuned for a 20×20 grid.
 
+**The clock is per run.** Each canvas game measures difficulty with its own
+"seconds of actual play" counter (`state.elapsed`, or `runTime` in Snake)
+that only advances while a game is running, and resets on Restart along
+with every agent's clock (`agent.resetClock()`). Agents rebuilt mid-game by
+a role change start at the run's current time (`agent.jumpClock(t)`). An
+earlier version read the shared `GameLoop`'s `elapsed`, which counts from
+page load and never resets — so a game started after idling on the page,
+or restarted, began at full speed. Don't go back to it for difficulty.
+
+**Level-skip cheat (`levelup`).** Each game pushes its clock to 3× its
+global `rampSeconds` (~95% of max difficulty) and jumps its agents to
+match. Missile Command adds a separate `state.boost` to difficulty instead,
+because its `elapsed` also times explosions and cooldowns. Minesweeper
+jumps to level 6, the first 30-mine level. Imitation has no difficulty
+ramp, so it has no cheat.
+
 ## Shared files
 
 | File | Purpose |
 |---|---|
 | `shared/js/engine.js` | Fixed-timestep `GameLoop`, DPI-correct canvas sizing. Pauses automatically on tab blur. |
 | `shared/js/agent.js` | `Role`, `Agent`/`HumanAgent`/`ComputerAgent`, `DifficultyCurve`, `createRoleAssignmentControl`. |
+| `shared/js/sfx.js` | `sfx(name)` sound effects synthesized with Web Audio (no audio files), started on the first click or keypress; `installMuteToggle()` puts a "Sound: on/off" button in the game header, remembered in localStorage. |
+| `shared/js/cheats.js` | `onCheatCode(callback)`: typing `levelup` outside a text field jumps the game to a high level. Chosen to avoid W/A/S/D, arrows, and Space so it never steers anything. |
 | `shared/js/matchmaking.js` | `simulateMatchmaking()` — randomized fake-queue delay, for Imitation and any other "don't reveal you're facing an AI instantly" mode. |
 | `shared/css/cabinet.css` | Hub page (the cocktail cabinet itself). |
 | `shared/css/game.css` | Shared per-game chrome: header, role-assignment control, HUD, canvas frame, controls. |

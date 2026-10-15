@@ -26,6 +26,13 @@ game's code, especially Imitation's and Minesweeper's (both depart from
 the canvas/GameLoop pattern the other five use, for good reasons explained
 there).
 
+## Sound and cheat code
+
+Every game except the Unity one has sound effects, with a "Sound: on/off"
+button in its header. Type **`levelup`** on any game page (not in a text
+box) to jump straight to a high level; Imitation has no levels, so it
+ignores it.
+
 ## Local development
 
 No build step. Any static file server works:

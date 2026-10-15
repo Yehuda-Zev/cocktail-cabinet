@@ -14,6 +14,10 @@
 // Full writeup of why full disguise isn't possible: ARCHITECTURE.md.
 
 import { joinRoom, selfId } from 'https://cdn.jsdelivr.net/npm/@trystero-p2p/nostr/+esm';
+// Sound plays only on this page, never in the chat tab: the AI's chat runs
+// on claude.ai, where this module can't load, so chat sounds on our human
+// chat page alone would tell players which opponent they got.
+import { sfx, installMuteToggle } from '../../shared/js/sfx.js';
 
 const APP_ID = 'cocktail-cabinet-imitation-v1';
 const LOBBY_ROOM_ID = 'lobby';
@@ -143,6 +147,7 @@ function openOpponentTab(info, tab) {
     fallbackEl.appendChild(link);
   }
 
+  sfx('match');
   enterWaitingPhase();
 }
 
@@ -190,6 +195,7 @@ function submitGuess(guess) {
     `You guessed ${guess.toUpperCase()}. You were actually talking to ${truth}. ` +
     (correct ? 'Correct!' : 'Incorrect.');
   showScreen('result');
+  sfx(correct ? 'win' : 'lose');
   cleanupConnection();
 }
 
@@ -236,3 +242,5 @@ document.getElementById('btn-find-match').addEventListener('click', () => {
 document.getElementById('btn-play-again').addEventListener('click', () => {
   showScreen('intro');
 });
+
+installMuteToggle();

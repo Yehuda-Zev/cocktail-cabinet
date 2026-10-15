@@ -1,5 +1,7 @@
 import { GameLoop, fitCanvasToContainer } from '../../shared/js/engine.js';
 import { Role, HumanAgent, ComputerAgent, DifficultyCurve, createRoleAssignmentControl } from '../../shared/js/agent.js';
+import { sfx, installMuteToggle } from '../../shared/js/sfx.js';
+import { onCheatCode } from '../../shared/js/cheats.js';
 
 // ---------------------------------------------------------------------
 // Field
@@ -19,6 +21,7 @@ const ROLES = {
 };
 
 const globalDifficulty = new DifficultyCurve({ min: 0, max: 1, rampSeconds: 70 });
+const HIGH_LEVEL_SECONDS = 210; // 3x the ramp: ~95% of max difficulty
 function ballSpeedForElapsed(elapsedSeconds) {
   const d = globalDifficulty.at(elapsedSeconds);
   const minSpeed = 210, maxSpeed = 400;
@@ -140,10 +143,12 @@ function resetState() {
     bricks: makeBricks(),
     scoreBottom: 0,
     scoreTop: 0,
-    elapsed: 0,
+    elapsed: 0, // seconds of actual play this run; drives difficulty
     serving: false,
   };
   winner = null;
+  agents?.bottom.resetClock();
+  agents?.top.resetClock();
 }
 
 function buildAgents(assignment) {
@@ -157,6 +162,8 @@ function buildAgents(assignment) {
   };
   agents.bottom.attach();
   agents.top.attach();
+  agents.bottom.jumpClock(state?.elapsed ?? 0);
+  agents.top.jumpClock(state?.elapsed ?? 0);
 }
 
 const roleControl = createRoleAssignmentControl({
@@ -211,8 +218,8 @@ function stepPhysics(dt) {
   ball.y += ball.vy * dt;
 
   // Walls
-  if (ball.x - BALL_RADIUS < 0) { ball.x = BALL_RADIUS; ball.vx *= -1; }
-  if (ball.x + BALL_RADIUS > FIELD.width) { ball.x = FIELD.width - BALL_RADIUS; ball.vx *= -1; }
+  if (ball.x - BALL_RADIUS < 0) { ball.x = BALL_RADIUS; ball.vx *= -1; sfx('bounce'); }
+  if (ball.x + BALL_RADIUS > FIELD.width) { ball.x = FIELD.width - BALL_RADIUS; ball.vx *= -1; sfx('bounce'); }
 
   // Bricks (first overlap wins for this frame)
   for (const b of state.bricks) {
@@ -221,6 +228,7 @@ function stepPhysics(dt) {
         ball.y + BALL_RADIUS > b.y && ball.y - BALL_RADIUS < b.y + b.h) {
       b.alive = false;
       ball.vy *= -1;
+      sfx('brick');
       break;
     }
   }
@@ -233,6 +241,7 @@ function stepPhysics(dt) {
       ball.x >= pb.x - PADDLE.width / 2 && ball.x <= pb.x + PADDLE.width / 2) {
     ball.y = paddleBottomY - BALL_RADIUS;
     reflectOffPaddle(ball, pb, true);
+    sfx('hit');
   }
 
   // Top paddle
@@ -243,19 +252,25 @@ function stepPhysics(dt) {
       ball.x >= pt.x - PADDLE.width / 2 && ball.x <= pt.x + PADDLE.width / 2) {
     ball.y = paddleTopY + PADDLE.height + BALL_RADIUS;
     reflectOffPaddle(ball, pt, false);
+    sfx('hit');
   }
 
   // Scoring
+  let scored = false;
   if (ball.y > FIELD.height + BALL_RADIUS * 2) {
     state.scoreTop++;
     startRally(true);
+    scored = true;
   } else if (ball.y < -BALL_RADIUS * 2) {
     state.scoreBottom++;
     startRally(false);
+    scored = true;
   }
 
   if (state.scoreBottom >= WIN_SCORE) winner = 'Bottom';
   if (state.scoreTop >= WIN_SCORE) winner = 'Top';
+  if (winner) sfx('win');
+  else if (scored) sfx('point');
 }
 
 function startRally(towardBottom) {
@@ -275,18 +290,21 @@ const hudStatus = document.getElementById('hud-status');
 
 const loop = new GameLoop({
   canvas,
-  update(dt, elapsed) {
-    agents.bottom.tick?.(dt);
-    agents.top.tick?.(dt);
+  update(dt) {
     if (!running) return;
-
-    state.elapsed = elapsed;
+    if (!winner) {
+      state.elapsed += dt;
+      agents.bottom.tick(dt);
+      agents.top.tick(dt);
+    }
     stepPhysics(dt);
 
     hudBottom.textContent = String(state.scoreBottom);
     hudTop.textContent = String(state.scoreTop);
-    hudSpeed.textContent = Math.round(ballSpeedForElapsed(elapsed)) + 'px/s';
-    hudStatus.textContent = winner ? `${winner} Wins!` : state.serving ? 'Serving…' : 'Playing';
+    hudSpeed.textContent = Math.round(ballSpeedForElapsed(state.elapsed)) + 'px/s';
+    hudStatus.textContent = winner ? `${winner} Wins!`
+      : performance.now() < noticeUntil ? 'Level skip!'
+      : state.serving ? 'Serving…' : 'Playing';
   },
   render(ctx) {
     draw(ctx);
@@ -347,4 +365,21 @@ document.getElementById('btn-restart').addEventListener('click', () => {
   resetState();
   running = true;
   hudStatus.textContent = 'Playing';
+});
+
+installMuteToggle();
+
+let noticeUntil = 0;
+onCheatCode(() => {
+  state.elapsed = Math.max(state.elapsed, HIGH_LEVEL_SECONDS);
+  agents.bottom.jumpClock(HIGH_LEVEL_SECONDS);
+  agents.top.jumpClock(HIGH_LEVEL_SECONDS);
+  // Ball speed is normally set at each serve; apply the new speed now too.
+  const ball = state.ball;
+  const speed = Math.hypot(ball.vx, ball.vy) || 1;
+  const target = ballSpeedForElapsed(state.elapsed);
+  ball.vx *= target / speed;
+  ball.vy *= target / speed;
+  noticeUntil = performance.now() + 1500;
+  sfx('levelup');
 });

@@ -5,6 +5,45 @@ and how we verified it. Kept as we go, not written after the fact.
 
 ---
 
+### 2026-10-14 — Sound effects and a level-skip cheat for the first seven games
+
+**Asked:** Add sound effects (not music) to the seven original games, and a
+cheat code that jumps straight to a high level in every game.
+
+**Produced:** `shared/js/sfx.js` (sounds synthesized with Web Audio, no
+audio files; a "Sound: on/off" header button remembered across pages) and
+`shared/js/cheats.js` (type `levelup` outside a text field). Hooked into
+each game: Snake (eat, crash), Breakout (paddle, wall, brick, point, win),
+Splat (flap, pass, crash, human gap placement), Asteroids (launch, dodge,
+crash), Missile Command (launch, fire, explosion, city hit, game over),
+Minesweeper (reveal, mine placement, mine hit, level clear), Imitation
+(match found, right/wrong guess). Imitation gets no chat sounds on purpose:
+the AI chat runs on claude.ai where this code can't load, so sounds only in
+our human chat tab would reveal which opponent you got.
+
+**Bugs found and fixed along the way:**
+- Every canvas game read difficulty from the shared game loop's clock,
+  which counts from page load and never resets. Waiting on the page before
+  Start, or pressing Restart, meant the game began at full speed instead of
+  starting easy. Each game now keeps a per-run clock that resets on Restart.
+- Minesweeper's Restart didn't reset the computer's skill, and its delayed
+  computer moves could fire into a new board after a restart. Fixed with
+  clock resets and a per-board round check.
+
+**Verified:** Claude ran each game in the browser, counting sound
+oscillators to confirm effects actually fire (can't hear audio from the
+test browser). Cheat results: Snake 4.6 → 9.9 moves/s, Breakout 216 → 391
+px/s, Splat 152 → 264 px/s, Asteroids 142 → 254 px/s, Minesweeper level
+1 → 6 (30 mines), Missile Command shows the skip and plays its sound but
+has no speed readout to compare. Restart returned each speed to its
+starting value. Also confirmed the crash/mine-hit and explosion sounds,
+Imitation's match and win sounds, and that the mute button saves its
+setting. **Not verified:** how the sounds actually sound (student listen),
+and the cheat on a real keyboard (the test tool sent individual key
+presses, which is what the cheat listens for).
+
+---
+
 ### 2026-10-14 — Depths of Danger (Unity build, 8th game)
 
 **Asked:** Take the Unity 6.3 Web build the user put in `games/dungeons/`

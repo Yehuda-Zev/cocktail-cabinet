@@ -1,5 +1,7 @@
 import { GameLoop, fitCanvasToContainer } from '../../shared/js/engine.js';
 import { Role, HumanAgent, ComputerAgent, DifficultyCurve, createRoleAssignmentControl } from '../../shared/js/agent.js';
+import { sfx, installMuteToggle } from '../../shared/js/sfx.js';
+import { onCheatCode } from '../../shared/js/cheats.js';
 
 // ---------------------------------------------------------------------
 // Field & physics constants
@@ -17,6 +19,7 @@ const ROLES = {
 };
 
 const globalDifficulty = new DifficultyCurve({ min: 0, max: 1, rampSeconds: 75 });
+const HIGH_LEVEL_SECONDS = 225; // 3x the ramp: ~95% of max difficulty
 function asteroidSpeedForElapsed(elapsed) {
   const d = globalDifficulty.at(elapsed);
   return 140 + (260 - 140) * d;
@@ -142,10 +145,12 @@ function resetState() {
     ship: { x: FIELD.width / 2, y: FIELD.height / 2, vx: 0, vy: 0, angle: -Math.PI / 2 },
     asteroids: [],
     score: 0,
-    elapsed: 0,
+    elapsed: 0, // seconds of actual play this run; drives difficulty
     nextSpawnReadyAt: 0,
   };
   gameOverFlag = false;
+  agents?.pilot.resetClock();
+  agents?.sender.resetClock();
 }
 
 function buildAgents(assignment) {
@@ -159,6 +164,8 @@ function buildAgents(assignment) {
   };
   agents.pilot.attach();
   agents.sender.attach();
+  agents.pilot.jumpClock(state?.elapsed ?? 0);
+  agents.sender.jumpClock(state?.elapsed ?? 0);
 }
 
 const roleControl = createRoleAssignmentControl({
@@ -193,9 +200,12 @@ function spawnAsteroidToward(target, speed) {
   });
 }
 
-function stepPhysics(dt, elapsed) {
+function stepPhysics(dt) {
   if (gameOverFlag) return;
-  state.elapsed = elapsed;
+  state.elapsed += dt;
+  agents.pilot.tick(dt);
+  agents.sender.tick(dt);
+  const elapsed = state.elapsed;
   const speed = asteroidSpeedForElapsed(elapsed);
 
   // Sender
@@ -203,6 +213,7 @@ function stepPhysics(dt, elapsed) {
   if (senderAction.spawnTarget && elapsed >= state.nextSpawnReadyAt) {
     spawnAsteroidToward(senderAction.spawnTarget, speed);
     state.nextSpawnReadyAt = elapsed + spawnCooldownForElapsed(elapsed) / 1000;
+    sfx('launch');
   }
 
   // Pilot
@@ -227,6 +238,7 @@ function stepPhysics(dt, elapsed) {
     const dist = Math.hypot(a.x - state.ship.x, a.y - state.ship.y);
     if (dist < ASTEROID_RADIUS + SHIP.radius) {
       gameOverFlag = true;
+      sfx('crash');
       return;
     }
   }
@@ -234,7 +246,9 @@ function stepPhysics(dt, elapsed) {
   state.asteroids = state.asteroids.filter((a) =>
     a.x > -40 && a.x < FIELD.width + 40 && a.y > -40 && a.y < FIELD.height + 40
   );
-  state.score += before - state.asteroids.length;
+  const dodged = before - state.asteroids.length;
+  state.score += dodged;
+  if (dodged) sfx('blip');
 }
 
 // ---------------------------------------------------------------------
@@ -246,16 +260,15 @@ const hudStatus = document.getElementById('hud-status');
 
 const loop = new GameLoop({
   canvas,
-  update(dt, elapsed) {
-    agents.pilot.tick?.(dt);
-    agents.sender.tick?.(dt);
+  update(dt) {
     if (!running) return;
 
-    stepPhysics(dt, elapsed);
+    stepPhysics(dt);
 
     hudScore.textContent = String(state.score);
-    hudSpeed.textContent = Math.round(asteroidSpeedForElapsed(elapsed)) + 'px/s';
-    hudStatus.textContent = gameOverFlag ? 'Destroyed!' : 'Playing';
+    hudSpeed.textContent = Math.round(asteroidSpeedForElapsed(state.elapsed)) + 'px/s';
+    hudStatus.textContent = gameOverFlag ? 'Destroyed!'
+      : performance.now() < noticeUntil ? 'Level skip!' : 'Playing';
   },
   render(ctx) {
     draw(ctx);
@@ -314,4 +327,15 @@ document.getElementById('btn-restart').addEventListener('click', () => {
   resetState();
   running = true;
   hudStatus.textContent = 'Playing';
+});
+
+installMuteToggle();
+
+let noticeUntil = 0;
+onCheatCode(() => {
+  state.elapsed = Math.max(state.elapsed, HIGH_LEVEL_SECONDS);
+  agents.pilot.jumpClock(HIGH_LEVEL_SECONDS);
+  agents.sender.jumpClock(HIGH_LEVEL_SECONDS);
+  noticeUntil = performance.now() + 1500;
+  sfx('levelup');
 });

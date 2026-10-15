@@ -1,5 +1,7 @@
 import { GameLoop, fitCanvasToContainer } from '../../shared/js/engine.js';
 import { Role, HumanAgent, ComputerAgent, DifficultyCurve, createRoleAssignmentControl } from '../../shared/js/agent.js';
+import { sfx, installMuteToggle } from '../../shared/js/sfx.js';
+import { onCheatCode } from '../../shared/js/cheats.js';
 
 // ---------------------------------------------------------------------
 // Field & physics constants
@@ -24,6 +26,7 @@ const ROLES = {
 };
 
 const globalDifficulty = new DifficultyCurve({ min: 0, max: 1, rampSeconds: 70 });
+const HIGH_LEVEL_SECONDS = 210; // 3x the ramp: ~95% of max difficulty
 function scrollSpeedForElapsed(elapsed) {
   const d = globalDifficulty.at(elapsed);
   return 150 + (270 - 150) * d;
@@ -152,10 +155,12 @@ function resetState() {
     spawnAcc: SPACING, // spawn one immediately
     nextId: 1,
     score: 0,
-    elapsed: 0,
+    elapsed: 0, // seconds of actual play this run; drives difficulty
     gapHeight: gapHeightForElapsed(0),
   };
   gameOverFlag = false;
+  agents?.layout.resetClock();
+  agents?.runner.resetClock();
 }
 
 function buildAgents(assignment) {
@@ -169,6 +174,8 @@ function buildAgents(assignment) {
   };
   agents.layout.attach();
   agents.runner.attach();
+  agents.layout.jumpClock(state?.elapsed ?? 0);
+  agents.runner.jumpClock(state?.elapsed ?? 0);
 }
 
 const roleControl = createRoleAssignmentControl({
@@ -186,12 +193,14 @@ buildAgents(roleControl.get());
 // ---------------------------------------------------------------------
 // Physics
 // ---------------------------------------------------------------------
-function stepPhysics(dt, elapsed) {
+function stepPhysics(dt) {
   if (gameOverFlag) return;
 
-  const scrollSpeed = scrollSpeedForElapsed(elapsed);
-  state.gapHeight = gapHeightForElapsed(elapsed);
-  state.elapsed = elapsed;
+  state.elapsed += dt;
+  agents.layout.tick(dt);
+  agents.runner.tick(dt);
+  const scrollSpeed = scrollSpeedForElapsed(state.elapsed);
+  state.gapHeight = gapHeightForElapsed(state.elapsed);
 
   state.spawnAcc += scrollSpeed * dt;
   if (state.spawnAcc >= SPACING) {
@@ -207,10 +216,13 @@ function stepPhysics(dt, elapsed) {
   }
 
   const layoutAction = agents.layout.getInput(state);
-  (layoutAction.assigns || []).forEach((a) => {
+  const assigns = layoutAction.assigns || [];
+  assigns.forEach((a) => {
     const col = state.columns.find((c) => c.id === a.id);
     if (col && !col.locked) col.gapY = a.gapY;
   });
+  // The computer re-asserts its gaps every tick, so only a human click sounds.
+  if (assigns.length && agents.layout instanceof HumanAgent) sfx('place');
 
   state.columns.forEach((col) => {
     col.x -= scrollSpeed * dt;
@@ -219,12 +231,16 @@ function stepPhysics(dt, elapsed) {
   state.columns = state.columns.filter((col) => col.x + COLUMN_WIDTH > -10);
 
   const runnerAction = agents.runner.getInput(state);
-  if (runnerAction.flap) state.runner.vy = FLAP_VELOCITY;
+  if (runnerAction.flap) {
+    state.runner.vy = FLAP_VELOCITY;
+    sfx('flap');
+  }
   state.runner.vy = Math.min(MAX_FALL_SPEED, state.runner.vy + GRAVITY * dt);
   state.runner.y += state.runner.vy * dt;
 
   if (state.runner.y - RUNNER_RADIUS < 0 || state.runner.y + RUNNER_RADIUS > FIELD.height) {
     gameOverFlag = true;
+    sfx('crash');
     return;
   }
 
@@ -234,11 +250,12 @@ function stepPhysics(dt, elapsed) {
       const half = col.gapHeight / 2;
       const inGap = state.runner.y - RUNNER_RADIUS > col.gapY - half &&
                     state.runner.y + RUNNER_RADIUS < col.gapY + half;
-      if (!inGap) { gameOverFlag = true; return; }
+      if (!inGap) { gameOverFlag = true; sfx('crash'); return; }
     }
     if (!col.passed && col.x + COLUMN_WIDTH < RUNNER_X - RUNNER_RADIUS) {
       col.passed = true;
       state.score++;
+      sfx('point');
     }
   }
 }
@@ -252,16 +269,15 @@ const hudStatus = document.getElementById('hud-status');
 
 const loop = new GameLoop({
   canvas,
-  update(dt, elapsed) {
-    agents.layout.tick?.(dt);
-    agents.runner.tick?.(dt);
+  update(dt) {
     if (!running) return;
 
-    stepPhysics(dt, elapsed);
+    stepPhysics(dt);
 
     hudScore.textContent = String(state.score);
-    hudSpeed.textContent = Math.round(scrollSpeedForElapsed(elapsed)) + 'px/s';
-    hudStatus.textContent = gameOverFlag ? 'Splat!' : 'Playing';
+    hudSpeed.textContent = Math.round(scrollSpeedForElapsed(state.elapsed)) + 'px/s';
+    hudStatus.textContent = gameOverFlag ? 'Splat!'
+      : performance.now() < noticeUntil ? 'Level skip!' : 'Playing';
   },
   render(ctx) {
     draw(ctx);
@@ -324,4 +340,15 @@ document.getElementById('btn-restart').addEventListener('click', () => {
   resetState();
   running = true;
   hudStatus.textContent = 'Playing';
+});
+
+installMuteToggle();
+
+let noticeUntil = 0;
+onCheatCode(() => {
+  state.elapsed = Math.max(state.elapsed, HIGH_LEVEL_SECONDS);
+  agents.layout.jumpClock(HIGH_LEVEL_SECONDS);
+  agents.runner.jumpClock(HIGH_LEVEL_SECONDS);
+  noticeUntil = performance.now() + 1500;
+  sfx('levelup');
 });

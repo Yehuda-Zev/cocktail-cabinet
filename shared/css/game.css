@@ -28,6 +28,19 @@ body.game-page {
   font-size: 0.85rem;
 }
 
+.sfx-toggle {
+  background: none;
+  border: 1px solid #3a3a52;
+  border-radius: 4px;
+  color: #9a9ab0;
+  font-family: inherit;
+  font-size: 0.75rem;
+  padding: 0.2rem 0.5rem;
+  cursor: pointer;
+}
+
+.sfx-toggle:hover { border-color: #2de2ff; color: #f2f2f8; }
+
 .game-header h1 {
   font-size: 1.4rem;
   letter-spacing: 0.08em;

@@ -108,6 +108,18 @@ https://decor8.online.
   computer side), so it is the one game that doesn't meet the both-directions
   requirement; the hub subtitle says only the first seven do.
 
+### 11. Sound effects and level-skip cheat (10-14)
+- **Asked:** add sound effects (no music) to the first seven games, and a cheat
+  code to jump straight to a high level in all of them.
+- **Returned:** synthesized sounds plus a mute button in every game; typing
+  `levelup` jumps difficulty to ~95% of max (Minesweeper: level 6). Also fixed
+  a real bug: Restart (or idling before Start) used to leave games at full
+  speed instead of starting easy.
+- **Verified:** Claude checked in the browser that sounds fire, the cheat
+  raises speed (e.g. Snake 4.6 → 9.9/s, Minesweeper level 1 → 6), and Restart
+  resets it. **Not verified:** how the sounds sound to a person (student
+  listen).
+
 ---
 
 **Standing instruction from student:** read current documentation before
